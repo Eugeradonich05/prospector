@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+/*
+ * Cuotas al día · sistema visual
+ * Concepto: el talonario de recibos. Papel frío, tinta verde profunda (al día),
+ * coral para lo que se debe. Los montos van en monoespaciada, como en un recibo.
+ */
+
+:root {
+  --papel: #f2f5f3;
+  --superficie: #ffffff;
+  --hundido: #e8eeeb;
+  --tinta: #10211a;
+  --tenue: #56665e;
+  --linea: #d6dfda;
+  --marca: #0c6a4e;
+  --marca-tinta: #ffffff;
+  --marca-suave: #dcf0e6;
+  --debe: #b93a26;
+  --debe-suave: #fbe6e1;
+  --aviso: #9a5b00;
+  --aviso-suave: #fbefd9;
+  --ok: #1b7a46;
+  --ok-suave: #ddf2e4;
+  --foco: #0c6a4e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --papel: #0e1613;
+    --superficie: #15201b;
+    --hundido: #111b17;
+    --tinta: #e3ece7;
+    --tenue: #94a69c;
+    --linea: #26352e;
+    --marca: #45c294;
+    --marca-tinta: #07120d;
+    --marca-suave: #173328;
+    --debe: #f08a76;
+    --debe-suave: #3a1c16;
+    --aviso: #e7ad55;
+    --aviso-suave: #35270f;
+    --ok: #74cf98;
+    --ok-suave: #14301f;
+    --foco: #45c294;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-papel: var(--papel);
+  --color-superficie: var(--superficie);
+  --color-hundido: var(--hundido);
+  --color-tinta: var(--tinta);
+  --color-tenue: var(--tenue);
+  --color-linea: var(--linea);
+  --color-marca: var(--marca);
+  --color-marca-tinta: var(--marca-tinta);
+  --color-marca-suave: var(--marca-suave);
+  --color-debe: var(--debe);
+  --color-debe-suave: var(--debe-suave);
+  --color-aviso: var(--aviso);
+  --color-aviso-suave: var(--aviso-suave);
+  --color-ok: var(--ok);
+  --color-ok-suave: var(--ok-suave);
+
+  --font-sans: "Onest Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque Variable", "Onest Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+html {
+  background: var(--papel);
+  color: var(--tinta);
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  text-wrap: balance;
+  letter-spacing: -0.01em;
+}
+
+:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Borde perforado de talonario, usado en el portal del socio y en la landing */
+.perforado {
+  background-image: radial-gradient(circle at 8px 50%, var(--papel) 5px, transparent 5.5px);
+  background-size: 16px 16px;
+  background-repeat: repeat-x;
+  height: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
