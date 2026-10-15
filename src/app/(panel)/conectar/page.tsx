@@ -19,7 +19,7 @@ export default function Conectar() {
         <TituloSeccion titulo="Estado" accion={conectado ? <Etiqueta tono="ok">Conectado</Etiqueta> : <Etiqueta tono="aviso">Sin conectar</Etiqueta>} />
         {faltan.length ? (
           <Aviso>
-            Para usar el asistente faltan estas variables: <strong>{faltan.join(", ")}</strong>. Los pasos para obtenerlas están en el README («Conexión gratis con tu app de Meta»).
+            Para usar el asistente faltan estas variables: <strong>{faltan.join(", ")}</strong>. Los pasos para obtenerlas están en el README («Opción A (gratis): con tu propia app de Meta»).
           </Aviso>
         ) : (
           <Conector appId={e.META_APP_ID!} configId={e.META_CONFIG_ID!} version={e.WHATSAPP_GRAPH_VERSION} />
