@@ -17,11 +17,15 @@ const esquema = z.object({
   // WhatsApp
   WHATSAPP_VERIFY_TOKEN: z.string().min(8), // lo inventás vos y lo pegás en Meta al configurar el webhook
   WHATSAPP_APP_SECRET: z.string().optional(), // App Secret de Meta: valida que el webhook venga de Meta
-  WHATSAPP_TOKEN: z.string().min(10),
+  WHATSAPP_TOKEN: z.string().optional(), // se obtiene en /conectar (o del proveedor)
   WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
   WHATSAPP_GRAPH_VERSION: z.string().default("v23.0"),
   WHATSAPP_API_URL: z.string().url().optional(),
   WHATSAPP_AUTH_HEADER: z.string().default("Authorization"),
+
+  // Tu app de Meta: para conectar el número con coexistencia desde /conectar (gratis, sin proveedor)
+  META_APP_ID: z.string().optional(),
+  META_CONFIG_ID: z.string().optional(), // ID de la configuración de Embedded Signup (Facebook Login for Business)
 
   // Cómo se comporta el bot
   TANDA_LIMITE: z.coerce.number().int().min(1).max(40).default(15),
@@ -43,9 +47,6 @@ export function env(): Env {
   const r = esquema.safeParse(process.env);
   if (!r.success) {
     throw new Error(`Configuración incompleta. Revisá: ${r.error.issues.map((i) => i.path.join(".")).join(", ")}`);
-  }
-  if (!r.data.WHATSAPP_API_URL && !r.data.WHATSAPP_PHONE_NUMBER_ID) {
-    throw new Error("Configuración incompleta. Falta WHATSAPP_PHONE_NUMBER_ID (o WHATSAPP_API_URL si usás un proveedor).");
   }
   cache = r.data;
   return cache;

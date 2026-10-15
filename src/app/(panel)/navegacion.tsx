@@ -8,6 +8,7 @@ const ITEMS = [
   { href: "/", texto: "Hoy" },
   { href: "/conversaciones", texto: "Conversaciones" },
   { href: "/prospectos", texto: "Prospectos" },
+  { href: "/conectar", texto: "Conectar WhatsApp" },
 ];
 
 export function Navegacion() {

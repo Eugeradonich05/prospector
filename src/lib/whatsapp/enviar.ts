@@ -15,10 +15,14 @@ export interface CanalWhatsApp {
 
 export function canalWhatsApp(): CanalWhatsApp {
   const e = env();
+  if (!e.WHATSAPP_TOKEN || (!e.WHATSAPP_API_URL && !e.WHATSAPP_PHONE_NUMBER_ID)) {
+    throw new Error("WhatsApp todavía no está conectado: completá WHATSAPP_TOKEN y WHATSAPP_PHONE_NUMBER_ID (ver /conectar).");
+  }
+  const token = e.WHATSAPP_TOKEN;
   const url = e.WHATSAPP_API_URL ?? `https://graph.facebook.com/${e.WHATSAPP_GRAPH_VERSION}/${e.WHATSAPP_PHONE_NUMBER_ID}/messages`;
   const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (e.WHATSAPP_AUTH_HEADER === "Authorization") headers.Authorization = `Bearer ${e.WHATSAPP_TOKEN}`;
-  else headers[e.WHATSAPP_AUTH_HEADER] = e.WHATSAPP_TOKEN;
+  if (e.WHATSAPP_AUTH_HEADER === "Authorization") headers.Authorization = `Bearer ${token}`;
+  else headers[e.WHATSAPP_AUTH_HEADER] = token;
 
   return {
     async enviarTexto(para, texto) {

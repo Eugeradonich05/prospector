@@ -49,31 +49,55 @@ Creá un proyecto nuevo (el plan gratis alcanza) y ejecutá en el SQL Editor, en
 
 ### 2. Tu número en la API sin perder la app (coexistencia)
 
-La **coexistencia** de WhatsApp permite usar el mismo número en la app de WhatsApp Business del celular y en la Cloud API. Así seguís escribiendo desde el teléfono y el bot recibe las respuestas.
+La **coexistencia** de WhatsApp permite usar el mismo número en la app de WhatsApp Business del celular y en la Cloud API. Así seguís escribiendo desde el teléfono y el bot recibe las respuestas. Al activarla, **las listas de difusión de la app dejan de funcionar** (no las vas a necesitar) y conviene usar el celular al menos cada dos semanas.
 
-Se activa con el *Embedded Signup* de un proveedor de WhatsApp (BSP) que la ofrezca. Opción recomendada para arrancar: **360dialog**, porque su API es compatible con la de Meta y este proyecto ya la soporta. Hay otros proveedores con coexistencia (YCloud, Chakra, etc.); antes de elegir, compará precios en sus sitios.
+#### Opción A (gratis): con tu propia app de Meta
 
-Al conectar el número con coexistencia:
-- Se sincronizan los chats de los últimos 6 meses.
-- **Las listas de difusión dejan de funcionar** en la app (no las vas a necesitar).
-- Los mensajes que mandás desde la app llegan al webhook como «ecos». Con eso el panel marca solo a quién ya contactaste.
+Es lo mismo que hacen los proveedores pagos, sin intermediario. El panel trae la pantalla **Conectar WhatsApp** para hacerlo.
 
-**Con 360dialog:**
-1. Conectá el número con su flujo de coexistencia y creá una API key.
-2. Variables:
-   ```
-   WHATSAPP_API_URL=https://waba-v2.360dialog.io/messages
-   WHATSAPP_AUTH_HEADER=D360-API-KEY
-   WHATSAPP_TOKEN=<tu API key de 360dialog>
-   ```
-3. Registrá el webhook apuntando a `https://<tu-dominio>/api/whatsapp`, según su documentación. 360dialog no firma como Meta, así que dejá `WHATSAPP_APP_SECRET` vacío.
+1. **Crear la app.** En [developers.facebook.com](https://developers.facebook.com/apps), creá una app con el caso de uso de WhatsApp, vinculada a tu portfolio de Meta Business (si no tenés uno, se crea ahí mismo).
+2. **Webhook.** En WhatsApp → Configuración:
+   - URL: `https://<tu-dominio>/api/whatsapp`
+   - Token de verificación: el valor de `WHATSAPP_VERIFY_TOKEN`
+   - Suscribí los campos **messages** y **smb_message_echoes**.
+3. **Asistente de conexión.** En Facebook Login para empresas → Configuraciones, creá una configuración con la plantilla de *WhatsApp Embedded Signup*. Copiá su ID en `META_CONFIG_ID`. En la configuración del login, agregá el dominio del panel a «Dominios permitidos para el SDK de JavaScript».
+4. **Credenciales.** En Configuración → Básica, copiá el *ID de la app* en `META_APP_ID` y la *clave secreta* en `WHATSAPP_APP_SECRET`.
+5. **Conectar.** Publicá el panel, entrá a **Conectar WhatsApp** y seguí el asistente: elegís conectar tu app existente, aceptás en el celular y escaneás un QR. Al final la pantalla te muestra `WHATSAPP_PHONE_NUMBER_ID` y `WHATSAPP_TOKEN` para cargar en las variables.
+6. **Token que no vence (recomendado).** En Meta Business → Configuración → Usuarios del sistema, creá un usuario administrador y asignale la app y la cuenta de WhatsApp. Generá un token con `whatsapp_business_messaging` y `whatsapp_business_management`, con caducidad «Nunca», y usalo como `WHATSAPP_TOKEN`.
 
-**Directo con Meta** (si sos o te hacés *Tech Provider*, algo que te va a servir también para ofrecer WhatsApp automático a los gimnasios de Cuotas al día):
-1. En developers.facebook.com, creá una app con el producto WhatsApp y hacé el onboarding del número con coexistencia.
-2. En Webhook, poné la URL `https://<tu-dominio>/api/whatsapp` y como token de verificación el mismo valor de `WHATSAPP_VERIFY_TOKEN`. Suscribí los campos **messages** y **smb_message_echoes**.
-3. Variables: `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_TOKEN` (token permanente de un usuario del sistema) y `WHATSAPP_APP_SECRET` (App Secret, para validar la firma de cada aviso).
+**Si Meta no te deja usar la coexistencia:** Meta la ofrece oficialmente para proveedores tecnológicos (*Tech Providers*). Como sos administrador de tu propia app, el asistente puede funcionar con tu número sin más trámites, pero no lo pude confirmar. Si te frena, hacete Tech Provider. Meta no cobra por eso, aunque lleva tiempo:
+- verificar tu negocio (con tu CUIT y documentación),
+- pasar la revisión de la app con dos videos cortos (uno enviando un mensaje y otro creando una plantilla).
 
-**Sin coexistencia** funciona igual, con una diferencia: después de enviar cada mensaje tenés que tocar «Marcar como enviado» en el panel, porque el sistema no se entera solo.
+Ese trámite además te habilita a ofrecerles WhatsApp automático a los gimnasios de Cuotas al día.
+
+#### Opción B (paga, más rápida): un proveedor
+
+360dialog y otros proveedores hacen la conexión por vos. El proyecto ya soporta 360dialog con estas variables:
+
+```
+WHATSAPP_API_URL=https://waba-v2.360dialog.io/messages
+WHATSAPP_AUTH_HEADER=D360-API-KEY
+WHATSAPP_TOKEN=<tu API key>
+```
+
+En este caso dejá `WHATSAPP_APP_SECRET` vacío y registrá el webhook según su documentación.
+
+#### Sin coexistencia
+
+Funciona igual, con una diferencia: después de enviar cada mensaje tenés que tocar «Marcar como enviado» en el panel, porque el sistema no se entera solo.
+
+#### Cuánto cuesta
+
+| Qué | Costo |
+|---|---|
+| Respuestas del bot por WhatsApp (dentro de las 24 h) | Gratis: Meta no cobra los mensajes de texto dentro de esa ventana |
+| Tus mensajes desde la app del celular | Gratis |
+| Supabase | Gratis en el plan inicial |
+| Claude | Unos centavos de dólar por respuesta. Con `ANTHROPIC_MODEL=claude-haiku-5-5` sale todavía menos |
+| Hosting | El plan gratis de Vercel es para uso personal no comercial: revisá sus condiciones o usá otro hosting |
+
+El bot nunca manda plantillas pagas, porque nunca inicia conversaciones.
 
 ### 3. Claude
 
@@ -114,7 +138,7 @@ Creá una API key en console.anthropic.com y cargala en `ANTHROPIC_API_KEY`. El 
 npm install
 cp .env.example .env.local
 npm run dev        # http://localhost:3000
-npm run check      # tipos + 39 tests del bot + test de base de datos
+npm run check      # tipos + 42 tests del bot + test de base de datos
 ```
 
 ## Límites conocidos

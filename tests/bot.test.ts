@@ -272,3 +272,22 @@ describe("salida del modelo", () => {
     expect(t).toContain("ES TU PRIMERA RESPUESTA");
   });
 });
+
+import { leerMensajeSignup } from "@/lib/whatsapp/conexion";
+
+describe("asistente de conexión de Meta", () => {
+  const ok = { type: "WA_EMBEDDED_SIGNUP", event: "FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING", data: { waba_id: "111", phone_number_id: "222" } };
+  it("lee el fin de la conexión con coexistencia", () => {
+    expect(leerMensajeSignup("https://www.facebook.com", ok)).toEqual({ wabaId: "111", phoneNumberId: "222", evento: "FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING", error: null });
+    expect(leerMensajeSignup("https://web.facebook.com", JSON.stringify(ok))?.wabaId).toBe("111");
+  });
+  it("ignora mensajes de otros orígenes o de otro tipo", () => {
+    expect(leerMensajeSignup("https://facebook.com.evil.com", ok)).toBeNull();
+    expect(leerMensajeSignup("https://evil.com", ok)).toBeNull();
+    expect(leerMensajeSignup("https://www.facebook.com", { type: "OTRO" })).toBeNull();
+    expect(leerMensajeSignup("https://www.facebook.com", "no es json")).toBeNull();
+  });
+  it("informa la cancelación", () => {
+    expect(leerMensajeSignup("https://www.facebook.com", { type: "WA_EMBEDDED_SIGNUP", event: "CANCEL", data: {} })?.error).toMatch(/cancel/i);
+  });
+});

@@ -42,9 +42,16 @@ export async function POST(req: NextRequest) {
   const eventos = parsearWebhook(payload);
   if (eventos.length) {
     after(async () => {
+      let canal;
+      try {
+        canal = canalWhatsApp();
+      } catch (e) {
+        console.error("[whatsapp]", e instanceof Error ? e.message : e);
+        return;
+      }
       const deps = {
         almacen: almacenSupabase,
-        canal: canalWhatsApp(),
+        canal,
         cerebro: cerebroClaude,
         notificar: avisarAEugenio,
         ahora: () => new Date(),

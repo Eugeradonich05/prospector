@@ -36,6 +36,11 @@ export default async function Hoy() {
   return (
     <>
       <Encabezado titulo="Hoy" detalle={`Límite diario: ${env().TANDA_LIMITE} primeros contactos. Mandalos espaciados durante el día.`} />
+      {!env().WHATSAPP_TOKEN ? (
+        <Aviso>
+          El bot todavía no puede responder: falta conectar tu número. <Link href="/conectar" className="font-semibold underline">Conectar WhatsApp</Link>
+        </Aviso>
+      ) : null}
 
       <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
