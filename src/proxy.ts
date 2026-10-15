@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { COOKIE_SESION, sesionValida } from "@/lib/sesion";
 
-/** Todo el panel requiere sesión. El webhook de WhatsApp y el login quedan abiertos. */
+/** Todo el panel requiere sesión. El webhook de WhatsApp, el login y la política de privacidad quedan abiertos. */
 export function proxy(req: NextRequest) {
   if (sesionValida(req.cookies.get(COOKIE_SESION)?.value, process.env.SESION_SECRETO)) return NextResponse.next();
   const url = req.nextUrl.clone();
@@ -11,5 +11,5 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!ingresar|api/whatsapp|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!ingresar|privacidad|api/whatsapp|_next/static|_next/image|favicon.ico).*)"],
 };
