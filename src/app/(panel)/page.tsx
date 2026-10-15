@@ -15,7 +15,8 @@ export default async function Hoy() {
   const hoy = hoyAR();
   const inicioDia = new Date(`${hoy}T00:00:00-03:00`).toISOString();
   const [{ data: tanda }, { data: urgentes }, { data: contactados }, { data: todos }] = await Promise.all([
-    db().from("prospectos").select("*").eq("tanda_fecha", hoy).order("prioridad"),
+    // La tanda de hoy más lo que quedó sin mandar de días anteriores (si no, quedaría trabado en "en_tanda").
+    db().from("prospectos").select("*").or(`tanda_fecha.eq.${hoy},estado.eq.en_tanda`).order("prioridad"),
     db().from("prospectos").select("id, nombre, ciudad, motivo_humano, estado").eq("necesita_humano", true).order("ultimo_entrante_el", { ascending: false }),
     db().from("prospectos").select("id, estado, contactado_el, seguimiento_el, ultimo_entrante_el, nombre, ciudad, telefono_wa").eq("estado", "contactado"),
     db().from("prospectos").select("estado, contactado_el, ultimo_entrante_el"),
@@ -29,7 +30,8 @@ export default async function Hoy() {
 
   const t = (todos ?? []) as Pick<Prospecto, "estado" | "contactado_el" | "ultimo_entrante_el">[];
   const totalContactados = t.filter((p) => p.contactado_el).length;
-  const respondieron = t.filter((p) => p.ultimo_entrante_el).length;
+  // Sin bot conectado, las respuestas se anotan a mano cambiando el estado.
+  const respondieron = t.filter((p) => p.ultimo_entrante_el || ["respondio", "interesado", "demo", "cliente"].includes(p.estado)).length;
   const interesados = t.filter((p) => ["interesado", "demo", "cliente"].includes(p.estado)).length;
   const respuestasHoy = t.filter((p) => p.ultimo_entrante_el && p.ultimo_entrante_el >= inicioDia).length;
 
@@ -38,7 +40,9 @@ export default async function Hoy() {
       <Encabezado titulo="Hoy" detalle={`Límite diario: ${env().TANDA_LIMITE} primeros contactos. Mandalos espaciados durante el día.`} />
       {!env().WHATSAPP_TOKEN ? (
         <Aviso>
-          El bot todavía no puede responder: falta conectar tu número. <Link href="/conectar" className="font-semibold underline">Conectar WhatsApp</Link>
+          Modo manual: el bot todavía no está conectado. Mandá cada mensaje con «Abrir WhatsApp», tocá «Marcar como enviado» y, cuando
+          te respondan, contestá desde el celular y cambiá el estado en Prospectos.{" "}
+          <Link href="/conectar" className="font-semibold underline">Conectar WhatsApp</Link>
         </Aviso>
       ) : null}
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/datos/supabase";
+import { env } from "@/lib/env";
 import { ETIQUETA_ESTADO, type Mensaje, type Prospecto } from "@/lib/dominio/tipos";
 import { AreaTexto, Aviso, Boton, Campo, Encabezado, Etiqueta, Selector, Tarjeta, TituloSeccion, cx } from "@/components/ui";
 import { Formulario, Enviar } from "@/components/formulario";
@@ -20,6 +21,7 @@ export default async function Conversacion({ params }: { params: Promise<{ id: s
   if (!pd) notFound();
   const p = pd as Prospecto;
   const mensajes = (md ?? []) as Mensaje[];
+  const botConectado = Boolean(env().WHATSAPP_TOKEN);
   const pausado = !p.bot_activo || (p.humano_hasta !== null && new Date(p.humano_hasta) > new Date());
   const ultimoEntrante = p.ultimo_entrante_el ? new Date(p.ultimo_entrante_el).getTime() : 0;
   const ventanaAbierta = Date.now() - ultimoEntrante < 24 * 3_600_000;
@@ -39,7 +41,7 @@ export default async function Conversacion({ params }: { params: Promise<{ id: s
               {p.rubro} · {p.ciudad}
             </span>
             <Etiqueta tono="marca">{ETIQUETA_ESTADO[p.estado]}</Etiqueta>
-            {pausado ? <Etiqueta>Bot en pausa</Etiqueta> : <Etiqueta tono="ok">Bot respondiendo</Etiqueta>}
+            {!botConectado ? <Etiqueta>Modo manual</Etiqueta> : pausado ? <Etiqueta>Bot en pausa</Etiqueta> : <Etiqueta tono="ok">Bot respondiendo</Etiqueta>}
           </span>
         }
       />
@@ -66,7 +68,12 @@ export default async function Conversacion({ params }: { params: Promise<{ id: s
               </li>
             ))}
           </ol>
-          {ventanaAbierta ? (
+          {!botConectado ? (
+            <Aviso>
+              Modo manual: respondé desde tu celular. Después anotá acá al costado el estado (Respondió, Interesado, Demo…) y en Notas lo
+              que te contó: cuántos alumnos tiene, cómo cobra hoy y cuándo volver a hablar.
+            </Aviso>
+          ) : ventanaAbierta ? (
             <Formulario accion={responderManual} limpiarAlGuardar>
               <input type="hidden" name="id" value={p.id} />
               <Campo etiqueta="Responder como Eugenio" htmlFor="texto" ayuda="Al enviar, el bot queda en pausa 12 horas en esta conversación. También podés responder desde tu celular.">
