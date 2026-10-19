@@ -20,7 +20,7 @@ export interface Cerebro {
   decidir(ctx: ContextoConversacion): Promise<Decision>;
 }
 
-const ROTULO = { entrante: "Negocio", bot: "Asistente", humano: "Eugenio" } as const;
+const ROTULO = { entrante: "Negocio", bot: "Asistente", humano: "Persona de Cauce" } as const;
 
 /** Arma la transcripción que lee el modelo. Se pasa como texto para no depender del orden de roles. */
 export function transcripcion(ctx: ContextoConversacion): string {

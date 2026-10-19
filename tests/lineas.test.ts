@@ -38,6 +38,7 @@ describe("mensajes por servicio", () => {
       for (const t of textos) {
         expect(t).toContain("Lo de Ana");
         expect(t).toContain("Cauce");
+        expect(t).not.toMatch(/Eugenio/); // los mensajes salen a nombre de Cauce
         expect(t).not.toMatch(/\$\s?\d/); // nunca precios en el primer mensaje
         expect(t.length).toBeLessThan(500);
       }
@@ -54,6 +55,14 @@ describe("mensajes por servicio", () => {
 
   it("elige la plantilla de forma estable por negocio", () => {
     expect(plantillaPara("turnos", "Barbería Faraón", "Barbería")).toBe(plantillaPara("turnos", "Barbería Faraón", "Barbería"));
+  });
+
+  it("el seguimiento y los avisos del bot salen a nombre de Cauce", async () => {
+    const { MENSAJE_NO_TEXTO, MENSAJE_LIMITE } = await import("@/lib/bot/manejar");
+    for (const t of [MENSAJE_NO_TEXTO, MENSAJE_LIMITE, mensajeSeguimiento("X", "Pilates"), mensajeSeguimiento("X", "Peluquería")]) {
+      expect(t).not.toMatch(/Eugenio/);
+    }
+    expect(instrucciones({ linea: "turnos" })).toMatch(/^Sos el asistente virtual de Cauce\./);
   });
 
   it("el seguimiento habla del servicio que se ofreció", () => {

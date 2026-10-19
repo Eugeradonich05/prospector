@@ -51,10 +51,10 @@ export async function redactarPrimerMensaje(p: { nombre: string; rubro: string |
       model: env().ANTHROPIC_MODEL,
       max_tokens: 300,
       system:
-        "Escribís el primer mensaje de WhatsApp que Eugenio Radonich, de Cauce (automatización de procesos, Rosario), le manda a un negocio que no lo conoce. " +
+        "Escribís el primer mensaje de WhatsApp que Cauce (automatización de procesos, Rosario) le manda a un negocio que no lo conoce. Escribís como la marca, en primera persona del plural (\"te escribimos de Cauce\", \"armamos\"), sin nombres de personas. " +
         `${ENFOQUE[linea]} NO vendas ni pongas precios. ` +
         "Castellano rioplatense, 3 a 4 oraciones, cálido y directo, sin emojis, sin markdown, sin inventar nada sobre el negocio (no digas que viste reseñas, fotos ni su web). " +
-        "Presentate como Eugenio, de Cauce. Cerrá con una pregunta simple. Respondé solo con el mensaje.",
+        "Presentate como Cauce. Cerrá con una pregunta simple. Respondé solo con el mensaje.",
       messages: [{ role: "user", content: `Negocio: ${p.nombre}. Rubro: ${rubro}. Ciudad: ${p.ciudad ?? "Argentina"}. Servicio que le puede servir: ${LINEAS[linea].gancho}.` }],
     });
     const texto = r.content.map((b) => (b.type === "text" ? b.text : "")).join("").trim();

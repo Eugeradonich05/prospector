@@ -266,7 +266,7 @@ describe("salida del modelo", () => {
       ],
       esPrimeraRespuestaDelBot: true,
     });
-    expect(t).toContain("[Eugenio]: Hola!");
+    expect(t).toContain("[Persona de Cauce]: Hola!");
     expect(t).toContain("[Negocio]: [envió un audio]");
     expect(t).toContain("alumnos: 120");
     expect(t).toContain("ES TU PRIMERA RESPUESTA");

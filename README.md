@@ -149,7 +149,7 @@ Creá una API key en console.anthropic.com y cargala en `ANTHROPIC_API_KEY`. El 
 npm install
 cp .env.example .env.local
 npm run dev        # http://localhost:3000
-npm run check      # tipos + 54 tests (bot y servicios por rubro) + test de base de datos
+npm run check      # tipos + 55 tests (bot y servicios por rubro) + test de base de datos
 ```
 
 ## Límites conocidos

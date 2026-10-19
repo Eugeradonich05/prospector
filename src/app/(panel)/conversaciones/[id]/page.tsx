@@ -76,7 +76,7 @@ export default async function Conversacion({ params }: { params: Promise<{ id: s
           ) : ventanaAbierta ? (
             <Formulario accion={responderManual} limpiarAlGuardar>
               <input type="hidden" name="id" value={p.id} />
-              <Campo etiqueta="Responder como Eugenio" htmlFor="texto" ayuda="Al enviar, el bot queda en pausa 12 horas en esta conversación. También podés responder desde tu celular.">
+              <Campo etiqueta="Responder como Cauce" htmlFor="texto" ayuda="Al enviar, el bot queda en pausa 12 horas en esta conversación. También podés responder desde tu celular.">
                 <AreaTexto id="texto" name="texto" className="min-h-20" />
               </Campo>
               <Enviar className="self-start">Enviar</Enviar>

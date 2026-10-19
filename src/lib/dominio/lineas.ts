@@ -27,11 +27,11 @@ export const LINEAS: Record<Linea, InfoLinea> = {
     pregunta: "¿cómo cobran hoy las cuotas?",
     plantillas: [
       (n, r) =>
-        `Hola! ¿Hablo con ${n}? Soy Eugenio, de Cauce, en Rosario. Armé una herramienta para ${articuloRubro(r)} que manda solos los avisos de cuota por WhatsApp con link de Mercado Pago y muestra quién debe. ¿Me contarías en 10 minutos cómo cobran hoy las cuotas? Me ayuda mucho a hacerla bien.`,
+        `Hola! ¿Hablo con ${n}? Te escribimos de Cauce, de Rosario. Armamos una herramienta para ${articuloRubro(r)} que manda solos los avisos de cuota por WhatsApp con link de Mercado Pago y muestra quién debe. ¿Nos contarías en 10 minutos cómo cobran hoy las cuotas? Nos ayuda mucho a hacerla bien.`,
       (n) =>
-        `Hola, ¿qué tal? ¿Es ${n}? Te escribe Eugenio, de Cauce (Rosario). Trabajo con estudios y gimnasios que pierden tiempo reclamando cuotas: los avisos salen solos por WhatsApp y el pago se marca solo. ¿Cómo lo manejan ustedes hoy?`,
+        `Hola, ¿qué tal? ¿Es ${n}? Te escribimos de Cauce (Rosario). Trabajamos con estudios y gimnasios que pierden tiempo reclamando cuotas: los avisos salen solos por WhatsApp y el pago se marca solo. ¿Cómo lo manejan ustedes hoy?`,
     ],
-    seguimiento: (n) => `Hola de nuevo! Te escribo una sola vez más por lo de las cuotas de ${n}. Si no es buen momento, ningún problema y no te molesto más. ¡Éxitos!`,
+    seguimiento: (n) => `Hola de nuevo! Les escribimos de Cauce una sola vez más por lo de las cuotas de ${n}. Si no es buen momento, ningún problema y no los molestamos más. ¡Éxitos!`,
   },
   turnos: {
     etiqueta: "Turnos por WhatsApp",
@@ -39,11 +39,11 @@ export const LINEAS: Record<Linea, InfoLinea> = {
     pregunta: "¿cómo manejan hoy los turnos y las consultas por WhatsApp?",
     plantillas: [
       (n, r) =>
-        `Hola! ¿Hablo con ${n}? Soy Eugenio, de Cauce, en Rosario. Armo asistentes de WhatsApp para ${articuloRubro(r)}: contestan precios y horarios, agendan el turno en el calendario y mandan el recordatorio, y si algo se complica te pasan la charla. ¿Cómo manejan hoy los turnos?`,
+        `Hola! ¿Hablo con ${n}? Te escribimos de Cauce, de Rosario. Armamos asistentes de WhatsApp para ${articuloRubro(r)}: contestan precios y horarios, agendan el turno en el calendario y mandan el recordatorio, y si algo se complica te pasan la charla. ¿Cómo manejan hoy los turnos?`,
       (n) =>
-        `Hola, ¿qué tal? ¿Es ${n}? Te escribe Eugenio, de Cauce (Rosario). Una pregunta corta: ¿cuántos mensajes por día les llegan preguntando precios o pidiendo turno? Estoy armando un asistente que los responde y agenda solo, y quiero entender cómo lo hacen hoy.`,
+        `Hola, ¿qué tal? ¿Es ${n}? Te escribimos de Cauce (Rosario). Una pregunta corta: ¿cuántos mensajes por día les llegan preguntando precios o pidiendo turno? Armamos un asistente que los responde y agenda solo, y queremos entender cómo lo hacen hoy.`,
     ],
-    seguimiento: (n) => `Hola de nuevo! Te escribo una sola vez más por lo de los turnos de ${n}. Si no es buen momento, ningún problema y no te molesto más. ¡Éxitos!`,
+    seguimiento: (n) => `Hola de nuevo! Les escribimos de Cauce una sola vez más por lo de los turnos de ${n}. Si no es buen momento, ningún problema y no los molestamos más. ¡Éxitos!`,
   },
   documentos: {
     etiqueta: "Documentos y avisos",
@@ -52,11 +52,11 @@ export const LINEAS: Record<Linea, InfoLinea> = {
     pregunta: "¿cuánto tiempo se les va buscando un dato en expedientes o documentación?",
     plantillas: [
       (n, r) =>
-        `Hola! ¿Hablo con ${n}? Soy Eugenio, de Cauce, en Rosario. Armé un buscador para ${articuloRubro(r)}: le preguntás en tus palabras y te responde con la cita exacta, documento y página, aunque el PDF esté escaneado. ¿Cuánto tiempo se les va hoy buscando un dato en la documentación?`,
+        `Hola! ¿Hablo con ${n}? Te escribimos de Cauce, de Rosario. Armamos un buscador para ${articuloRubro(r)}: le preguntás en tus palabras y te responde con la cita exacta, documento y página, aunque el PDF esté escaneado. ¿Cuánto tiempo se les va hoy buscando un dato en la documentación?`,
       (n) =>
-        `Hola, ¿qué tal? ¿Es ${n}? Te escribe Eugenio, de Cauce (Rosario). Trabajo automatizando tareas repetitivas en estudios: buscar datos en expedientes y PDF, avisos de vencimientos a clientes, reportes. ¿Hay algo de eso que hoy les saque mucho tiempo?`,
+        `Hola, ¿qué tal? ¿Es ${n}? Te escribimos de Cauce (Rosario). Automatizamos tareas repetitivas en estudios: buscar datos en expedientes y PDF, avisos de vencimientos a clientes, reportes. ¿Hay algo de eso que hoy les saque mucho tiempo?`,
     ],
-    seguimiento: (n) => `Hola de nuevo! Te escribo una sola vez más por lo que te comenté para ${n}. Si no es buen momento, ningún problema y no te molesto más. ¡Éxitos!`,
+    seguimiento: (n) => `Hola de nuevo! Les escribimos de Cauce una sola vez más por lo que te comenté para ${n}. Si no es buen momento, ningún problema y no los molestamos más. ¡Éxitos!`,
   },
   a_medida: {
     etiqueta: "Automatización a medida",
@@ -64,11 +64,11 @@ export const LINEAS: Record<Linea, InfoLinea> = {
     pregunta: "¿qué tarea repiten todos los días que les gustaría que se haga sola?",
     plantillas: [
       (n, r) =>
-        `Hola! ¿Hablo con ${n}? Soy Eugenio, de Cauce, en Rosario. Automatizo tareas repetitivas para ${articuloRubro(r)}: respuestas por WhatsApp a las consultas de siempre, avisos que salen solos y reportes del mes. ¿Qué es lo que más tiempo les saca hoy?`,
+        `Hola! ¿Hablo con ${n}? Te escribimos de Cauce, de Rosario. Automatizamos tareas repetitivas para ${articuloRubro(r)}: respuestas por WhatsApp a las consultas de siempre, avisos que salen solos y reportes del mes. ¿Qué es lo que más tiempo les saca hoy?`,
       (n) =>
-        `Hola, ¿qué tal? ¿Es ${n}? Te escribe Eugenio, de Cauce (Rosario). Ayudo a negocios a que lo repetitivo se haga solo: contestar las mismas consultas, avisar a los clientes, armar planillas. ¿Hay alguna tarea así que les gustaría sacarse de encima?`,
+        `Hola, ¿qué tal? ¿Es ${n}? Te escribimos de Cauce (Rosario). Ayudamos a negocios a que lo repetitivo se haga solo: contestar las mismas consultas, avisar a los clientes, armar planillas. ¿Hay alguna tarea así que les gustaría sacarse de encima?`,
     ],
-    seguimiento: (n) => `Hola de nuevo! Te escribo una sola vez más por lo de automatizar tareas en ${n}. Si no es buen momento, ningún problema y no te molesto más. ¡Éxitos!`,
+    seguimiento: (n) => `Hola de nuevo! Les escribimos de Cauce una sola vez más por lo de automatizar tareas en ${n}. Si no es buen momento, ningún problema y no los molestamos más. ¡Éxitos!`,
   },
 };
 
