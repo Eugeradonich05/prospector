@@ -8,7 +8,7 @@ import type { Prospecto } from "@/lib/dominio/tipos";
 import { AreaTexto, Aviso, Encabezado, Etiqueta, Tarjeta, TituloSeccion, Vacio } from "@/components/ui";
 import { Formulario, Enviar } from "@/components/formulario";
 import { AbrirWhatsApp } from "@/components/abrir-whatsapp";
-import { armarTanda, guardarMensajeInicial, marcarEnviado, sacarDeTanda } from "../acciones";
+import { armarTanda, guardarMensajeInicial, marcarEnviado, rehacerMensajes, sacarDeTanda } from "../acciones";
 
 export const metadata = { title: "Hoy" };
 
@@ -98,6 +98,13 @@ export default async function Hoy() {
         ) : !pendientes.length ? (
           <Aviso tono="ok">Tanda de hoy completa. Las respuestas las va contestando el bot.</Aviso>
         ) : (
+          <>
+          <Formulario accion={rehacerMensajes}>
+            <div className="flex flex-wrap items-center gap-3">
+              <Enviar variante="secundario">Rehacer los {pendientes.length} mensajes pendientes</Enviar>
+              <p className="text-sm text-tenue">Los vuelve a escribir con las reglas actuales (por ejemplo, presentándose como Cauce). Pisa lo que hayas editado.</p>
+            </div>
+          </Formulario>
           <ul className="flex flex-col gap-4">
             {pendientes.map((p) => (
               <li key={p.id} className="flex flex-col gap-3 rounded-lg border border-linea p-4">
@@ -149,6 +156,7 @@ export default async function Hoy() {
               </li>
             ))}
           </ul>
+          </>
         )}
         {lista.length ? (
           <p className="text-xs text-tenue">

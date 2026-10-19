@@ -88,6 +88,30 @@ export async function marcarEnviado(datos: FormData) {
   revalidatePath("/");
 }
 
+/**
+ * Vuelve a redactar los mensajes de la tanda que todavía no se mandaron, con las reglas actuales
+ * (por ejemplo, después de cambiar cómo se presenta Cauce). Si viene un id, solo ese.
+ */
+export async function rehacerMensajes(_: EstadoAccion, datos: FormData): Promise<EstadoAccion> {
+  const id = datos.get("id") ? uuid.safeParse(datos.get("id")) : null;
+  if (id && !id.success) return fallo("Prospecto inválido.");
+  let consulta = db().from("prospectos").select("id, nombre, rubro, ciudad").eq("estado", "en_tanda");
+  if (id?.success) consulta = consulta.eq("id", id.data);
+  const { data } = await consulta;
+  const lista = (data ?? []) as Pick<Prospecto, "id" | "nombre" | "rubro" | "ciudad">[];
+  if (!lista.length) return fallo("No hay mensajes pendientes para rehacer.");
+  for (let i = 0; i < lista.length; i += 3) {
+    await Promise.all(
+      lista.slice(i, i + 3).map(async (p) => {
+        const mensaje = await redactarPrimerMensaje(p);
+        await db().from("prospectos").update({ mensaje_inicial: mensaje }).eq("id", p.id).eq("estado", "en_tanda");
+      }),
+    );
+  }
+  revalidatePath("/");
+  return exito(lista.length === 1 ? "Mensaje rehecho." : `Rehice ${lista.length} mensajes.`);
+}
+
 export async function sacarDeTanda(datos: FormData) {
   const id = uuid.safeParse(datos.get("id"));
   if (!id.success) return;
