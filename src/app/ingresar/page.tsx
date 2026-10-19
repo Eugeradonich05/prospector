@@ -8,7 +8,7 @@ export default function Ingresar() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center gap-6 px-4">
       <div>
-        <p className="text-sm font-semibold uppercase tracking-wide text-tenue">Cuotas al día</p>
+        <p className="text-sm font-semibold uppercase tracking-wide text-tenue">Cauce</p>
         <h1 className="text-3xl font-extrabold">Prospector</h1>
       </div>
       <Formulario accion={ingresar}>

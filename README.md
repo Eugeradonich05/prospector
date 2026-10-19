@@ -1,6 +1,15 @@
 # Prospector
 
-Bot de prospección por WhatsApp para **Cuotas al día**.
+Bot de prospección por WhatsApp para **Cauce**: ofrece a cada negocio la automatización que le sirve a su rubro.
+
+| Servicio | Rubros | Qué se le ofrece en el primer mensaje |
+|---|---|---|
+| Cuotas al día | Gimnasios, pilates, funcional, danza, artes marciales, academias | Avisos de cuota por WhatsApp con link de Mercado Pago |
+| Turnos por WhatsApp | Peluquerías, barberías, estética, odontología, kinesiología, veterinarias | Asistente que contesta, agenda en el calendario y recuerda el turno |
+| Documentos y avisos | Estudios jurídicos y contables, escribanías | Buscador con la cita exacta (documento y página) y avisos de vencimientos |
+| Automatización a medida | Inmobiliarias, talleres y otros | Respuestas automáticas, avisos («ya está listo», vencimientos) y reportes |
+
+**Modo Cancha no entra acá:** los complejos de canchas nunca se eligen para una tanda y, si alguno escribe, el bot se lo deriva a Eugenio. El servicio de cada prospecto sale de su rubro (`src/lib/dominio/lineas.ts`).
 
 - **Vos mandás el primer mensaje**, en tandas diarias que arma el panel: ~15 prospectos por día, cada uno con un mensaje distinto escrito por Claude. Tocás «Abrir WhatsApp» y «Enviar». Son unos 5 minutos.
 - **El bot contesta solo** cuando el negocio responde: pregunta cómo cobran, explica el producto, ofrece la prueba gratis y **te pasa la conversación** cuando hay interés real, mandan un audio o algo se complica.
@@ -45,7 +54,8 @@ Cuando el bot deriva, la conversación aparece arriba en **Hoy → Te necesitan*
 Creá un proyecto nuevo (el plan gratis alcanza) y ejecutá en el SQL Editor, en orden:
 
 1. `supabase/migrations/20261014000001_prospector.sql`
-2. `supabase/seed.sql`, con los 145 prospectos (135 tienen WhatsApp).
+2. `supabase/seed.sql`, con los 145 prospectos de Cuotas al día (135 tienen WhatsApp).
+3. `supabase/seed-cauce.sql`, con 524 prospectos de los otros servicios (peluquerías, estudios, inmobiliarias, etc.), todos con WhatsApp. Si ya tenés la base andando, ejecutá solo este archivo: no toca lo que ya contactaste.
 
 ### 2. Tu número en la API sin perder la app (coexistencia)
 
@@ -117,13 +127,14 @@ Creá una API key en console.anthropic.com y cargala en `ANTHROPIC_API_KEY`. El 
 
 1. Mandate un mensaje a vos mismo desde otro teléfono: tu número no está en la base, así que el bot **no** debe responder.
 2. Cargá en la base un prospecto de prueba con el número de un amigo, armá una tanda, mandale el mensaje y que te conteste. Revisá cómo responde el bot.
-3. Ajustá lo que el bot sabe en `src/lib/bot/conocimiento.ts`. Ahí están la información del producto y las reglas de conversación.
+3. Ajustá lo que el bot sabe en `src/lib/bot/conocimiento.ts`: lo general de Cauce, cada servicio y las reglas de conversación. Solo Cuotas al día tiene precios; para el resto el bot ofrece una charla de 15 minutos y nunca da números.
 
 ## Uso diario
 
-1. **Hoy → Armar tanda de hoy.** Revisá los mensajes, editá si querés, y mandalos espaciados durante el día. No los 15 de golpe.
-2. **Te necesitan:** respondé esas conversaciones desde el panel o desde el celular. Al escribir vos, el bot se corre 12 horas.
-3. **Seguimientos:** a los 3 días sin respuesta, un único recordatorio.
+1. **Hoy → Armar tanda de hoy.** La tanda mezcla servicios (como mucho `TANDA_MAX_POR_LINEA` de cada uno) y cada mensaje habla de lo que le sirve a ese rubro. Revisá los mensajes, editá si querés, y mandalos espaciados durante el día. No los 15 de golpe.
+2. **Prospectos:** filtrá por servicio para ver cuántos respondieron sobre cuántos contactaste en cada uno, y así saber qué rubro conviene empujar.
+3. **Te necesitan:** respondé esas conversaciones desde el panel o desde el celular. Al escribir vos, el bot se corre 12 horas.
+4. **Seguimientos:** a los 3 días sin respuesta, un único recordatorio.
 
 ## Reglas para cuidar el número
 
@@ -138,7 +149,7 @@ Creá una API key en console.anthropic.com y cargala en `ANTHROPIC_API_KEY`. El 
 npm install
 cp .env.example .env.local
 npm run dev        # http://localhost:3000
-npm run check      # tipos + 42 tests del bot + test de base de datos
+npm run check      # tipos + 54 tests (bot y servicios por rubro) + test de base de datos
 ```
 
 ## Límites conocidos

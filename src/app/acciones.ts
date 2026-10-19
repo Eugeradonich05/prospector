@@ -44,8 +44,12 @@ export async function armarTanda(_: EstadoAccion): Promise<EstadoAccion> {
   const limite = env().TANDA_LIMITE - (yaHoy ?? 0);
   if (limite <= 0) return fallo(`Ya armaste la tanda de hoy (${env().TANDA_LIMITE}). Mañana sigue.`);
 
-  const { data } = await db().from("prospectos").select("id, estado, prioridad, telefono_wa, ciudad, resenas").eq("estado", "sin_contactar");
-  const ids = elegirTanda((data ?? []) as Prospecto[], { limite, maxPorCiudad: env().TANDA_MAX_POR_CIUDAD });
+  const { data } = await db().from("prospectos").select("id, estado, prioridad, telefono_wa, ciudad, resenas, rubro").eq("estado", "sin_contactar");
+  const ids = elegirTanda((data ?? []) as Prospecto[], {
+    limite,
+    maxPorCiudad: env().TANDA_MAX_POR_CIUDAD,
+    maxPorLinea: env().TANDA_MAX_POR_LINEA,
+  });
   if (!ids.length) return fallo("No quedan prospectos sin contactar con WhatsApp. Cargá más en la base.");
 
   const { data: elegidos } = await db().from("prospectos").select("id, nombre, rubro, ciudad").in("id", ids);

@@ -3,6 +3,7 @@ import { db } from "@/lib/datos/supabase";
 import { env } from "@/lib/env";
 import { hoyAR } from "@/lib/dominio/fechas";
 import { mensajeSeguimiento, seguimientosPendientes } from "@/lib/dominio/tandas";
+import { LINEAS, lineaDeRubro } from "@/lib/dominio/lineas";
 import type { Prospecto } from "@/lib/dominio/tipos";
 import { AreaTexto, Aviso, Encabezado, Etiqueta, Tarjeta, TituloSeccion, Vacio } from "@/components/ui";
 import { Formulario, Enviar } from "@/components/formulario";
@@ -18,7 +19,7 @@ export default async function Hoy() {
     // La tanda de hoy más lo que quedó sin mandar de días anteriores (si no, quedaría trabado en "en_tanda").
     db().from("prospectos").select("*").or(`tanda_fecha.eq.${hoy},estado.eq.en_tanda`).order("prioridad"),
     db().from("prospectos").select("id, nombre, ciudad, motivo_humano, estado").eq("necesita_humano", true).order("ultimo_entrante_el", { ascending: false }),
-    db().from("prospectos").select("id, estado, contactado_el, seguimiento_el, ultimo_entrante_el, nombre, ciudad, telefono_wa").eq("estado", "contactado"),
+    db().from("prospectos").select("id, estado, contactado_el, seguimiento_el, ultimo_entrante_el, nombre, rubro, ciudad, telefono_wa").eq("estado", "contactado"),
     db().from("prospectos").select("estado, contactado_el, ultimo_entrante_el"),
   ]);
 
@@ -90,7 +91,7 @@ export default async function Hoy() {
         {!lista.length ? (
           <Formulario accion={armarTanda}>
             <p className="text-sm text-tenue">
-              Elige los mejores prospectos sin contactar (primero prioridad A, repartidos entre ciudades) y Claude redacta un mensaje distinto para cada uno. Tarda uno o dos minutos.
+              Elige los mejores prospectos sin contactar (primero prioridad A, repartidos entre ciudades y entre rubros) y Claude redacta un mensaje distinto para cada uno, según lo que le sirve a ese rubro. Tarda uno o dos minutos.
             </p>
             <Enviar className="self-start">Armar tanda de hoy</Enviar>
           </Formulario>
@@ -112,7 +113,10 @@ export default async function Hoy() {
                       ) : null}
                     </p>
                   </div>
-                  <Etiqueta tono={p.prioridad === "A" ? "marca" : "neutro"}>Prioridad {p.prioridad}</Etiqueta>
+                  <span className="flex flex-wrap gap-1.5">
+                    <Etiqueta tono="neutro">{LINEAS[lineaDeRubro(p.rubro) ?? "a_medida"].etiqueta}</Etiqueta>
+                    <Etiqueta tono={p.prioridad === "A" ? "marca" : "neutro"}>Prioridad {p.prioridad}</Etiqueta>
+                  </span>
                 </div>
                 <Formulario accion={guardarMensajeInicial}>
                   <input type="hidden" name="id" value={p.id} />
@@ -165,7 +169,7 @@ export default async function Hoy() {
                   <span className="font-semibold">{p.nombre}</span> <span className="text-sm text-tenue">· {p.ciudad}</span>
                 </span>
                 <span className="flex items-center gap-3">
-                  <AbrirWhatsApp telefono={p.telefono_wa!} mensaje={mensajeSeguimiento(p.nombre)} />
+                  <AbrirWhatsApp telefono={p.telefono_wa!} mensaje={mensajeSeguimiento(p.nombre, p.rubro)} />
                   <form action={marcarEnviado}>
                     <input type="hidden" name="id" value={p.id} />
                     <input type="hidden" name="tipo" value="seguimiento" />

@@ -30,8 +30,11 @@ const esquema = z.object({
   // Cómo se comporta el bot
   TANDA_LIMITE: z.coerce.number().int().min(1).max(40).default(15),
   TANDA_MAX_POR_CIUDAD: z.coerce.number().int().min(1).max(40).default(6),
+  // Tope por servicio (Cuotas al día, turnos, documentos, a medida) para que cada tanda mezcle rubros
+  TANDA_MAX_POR_LINEA: z.coerce.number().int().min(1).max(40).default(4),
   BOT_MAX_RESPUESTAS: z.coerce.number().int().min(1).max(30).default(10),
   LINK_PRUEBA: z.string().url().optional(), // link de registro de Cuotas al día, cuando esté publicado
+  LINK_SITIO: z.string().url().optional(), // web de Cauce, para quien pida ver más
 
   // Aviso por email cuando una conversación necesita que intervengas (opcional, con Resend)
   RESEND_API_KEY: z.string().optional(),

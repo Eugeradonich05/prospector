@@ -6,7 +6,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: { default: "Prospector", template: "%s · Prospector" },
-  description: "Tandas de contacto y respuestas automáticas por WhatsApp para Cuotas al día.",
+  description: "Tandas de contacto y respuestas automáticas por WhatsApp para los servicios de Cauce.",
   robots: { index: false, follow: false },
 };
 

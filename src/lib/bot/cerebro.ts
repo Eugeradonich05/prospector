@@ -1,4 +1,5 @@
 import type { EstadoProspecto, Mensaje, Prospecto } from "@/lib/dominio/tipos";
+import { LINEAS, lineaDeRubro } from "@/lib/dominio/lineas";
 
 /** Lo que decide el bot ante un mensaje entrante. */
 export type Decision = {
@@ -32,6 +33,7 @@ export function transcripcion(ctx: ContextoConversacion): string {
     .join("; ");
   return [
     `NEGOCIO: ${ctx.prospecto.nombre} (${ctx.prospecto.rubro ?? "rubro desconocido"}, ${ctx.prospecto.ciudad ?? "ciudad desconocida"})`,
+    `LO QUE LE OFRECIÓ EUGENIO EN EL PRIMER MENSAJE: ${LINEAS[lineaDeRubro(ctx.prospecto.rubro) ?? "a_medida"].etiqueta}`,
     datos ? `LO QUE YA SABEMOS: ${datos}` : "LO QUE YA SABEMOS: nada todavía",
     ctx.esPrimeraRespuestaDelBot ? "ES TU PRIMERA RESPUESTA en esta conversación." : "Ya te presentaste antes; no lo repitas.",
     "",
@@ -57,11 +59,12 @@ export const ESQUEMA_RESPUESTA = {
       type: "object",
       description: "Datos nuevos que aprendiste del negocio. Solo lo que dijeron, sin suponer.",
       properties: {
-        alumnos: { type: "string" },
-        medios_de_pago: { type: "string" },
-        como_registran: { type: "string" },
-        atrasos: { type: "string" },
+        tamanio: { type: "string", description: "Alumnos, clientes, pacientes, expedientes o propiedades que manejan, si lo dijeron." },
+        tarea_repetitiva: { type: "string", description: "La tarea que les saca tiempo, en sus palabras." },
+        como_lo_hacen_hoy: { type: "string", description: "Cómo la resuelven hoy (a mano, planilla, cuaderno, otro sistema)." },
         sistema_actual: { type: "string" },
+        medios_de_pago: { type: "string" },
+        atrasos: { type: "string", description: "Cuotas atrasadas o turnos perdidos, si lo mencionaron." },
         contacto: { type: "string", description: "Nombre de la persona que responde, si lo dijo." },
       },
     },
