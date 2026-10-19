@@ -39,17 +39,39 @@ export async function salir() {
 // ── Tandas ─────────────────────────────────────────────
 
 export async function armarTanda(_: EstadoAccion): Promise<EstadoAccion> {
+  return armar([]);
+}
+
+/**
+ * Cambia la tanda por otra: los que todavía no mandaste vuelven a la lista (sin mensaje) y se eligen
+ * otros prospectos con mensajes nuevos. Los que ya mandaste hoy siguen contando para el límite diario.
+ */
+export async function nuevaTanda(_: EstadoAccion): Promise<EstadoAccion> {
+  const { data } = await db().from("prospectos").select("id").eq("estado", "en_tanda");
+  const devueltos = (data ?? []).map((p) => p.id as string);
+  if (devueltos.length) {
+    await db().from("prospectos").update({ estado: "sin_contactar", tanda_fecha: null, mensaje_inicial: null }).in("id", devueltos).eq("estado", "en_tanda");
+  }
+  return armar(devueltos);
+}
+
+/** Arma la tanda evitando, si se puede, los prospectos de `evitar` (los que se acaban de devolver). */
+async function armar(evitar: string[]): Promise<EstadoAccion> {
   const hoy = hoyAR();
   const { count: yaHoy } = await db().from("prospectos").select("id", { count: "exact", head: true }).eq("tanda_fecha", hoy);
   const limite = env().TANDA_LIMITE - (yaHoy ?? 0);
   if (limite <= 0) return fallo(`Ya armaste la tanda de hoy (${env().TANDA_LIMITE}). Mañana sigue.`);
 
   const { data } = await db().from("prospectos").select("id, estado, prioridad, telefono_wa, ciudad, resenas, rubro").eq("estado", "sin_contactar");
-  const ids = elegirTanda((data ?? []) as Prospecto[], {
-    limite,
-    maxPorCiudad: env().TANDA_MAX_POR_CIUDAD,
-    maxPorLinea: env().TANDA_MAX_POR_LINEA,
-  });
+  const opciones = { limite, maxPorCiudad: env().TANDA_MAX_POR_CIUDAD, maxPorLinea: env().TANDA_MAX_POR_LINEA };
+  const todos = (data ?? []) as Prospecto[];
+  const fuera = new Set(evitar);
+  let ids = elegirTanda(todos.filter((p) => !fuera.has(p.id)), opciones);
+  // Si no alcanza con prospectos nuevos, se completa con los que se devolvieron.
+  if (ids.length < limite && fuera.size) {
+    const elegidos = new Set(ids);
+    ids = [...ids, ...elegirTanda(todos.filter((p) => fuera.has(p.id) && !elegidos.has(p.id)), { ...opciones, limite: limite - ids.length })];
+  }
   if (!ids.length) return fallo("No quedan prospectos sin contactar con WhatsApp. Cargá más en la base.");
 
   const { data: elegidos } = await db().from("prospectos").select("id, nombre, rubro, ciudad").in("id", ids);

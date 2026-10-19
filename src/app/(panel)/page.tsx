@@ -8,7 +8,7 @@ import type { Prospecto } from "@/lib/dominio/tipos";
 import { AreaTexto, Aviso, Encabezado, Etiqueta, Tarjeta, TituloSeccion, Vacio } from "@/components/ui";
 import { Formulario, Enviar } from "@/components/formulario";
 import { AbrirWhatsApp } from "@/components/abrir-whatsapp";
-import { armarTanda, guardarMensajeInicial, marcarEnviado, rehacerMensajes, sacarDeTanda } from "../acciones";
+import { armarTanda, guardarMensajeInicial, marcarEnviado, nuevaTanda, rehacerMensajes, sacarDeTanda } from "../acciones";
 
 export const metadata = { title: "Hoy" };
 
@@ -96,15 +96,27 @@ export default async function Hoy() {
             <Enviar className="self-start">Armar tanda de hoy</Enviar>
           </Formulario>
         ) : !pendientes.length ? (
-          <Aviso tono="ok">Tanda de hoy completa. Las respuestas las va contestando el bot.</Aviso>
+          <>
+            <Aviso tono="ok">Tanda de hoy completa. Las respuestas las va contestando el bot.</Aviso>
+            <Formulario accion={nuevaTanda}>
+              <p className="text-sm text-tenue">Si todavía te queda margen en el límite diario, podés sumar otra tanda.</p>
+              <Enviar variante="secundario" className="self-start">Generar nueva tanda</Enviar>
+            </Formulario>
+          </>
         ) : (
           <>
-          <Formulario accion={rehacerMensajes}>
-            <div className="flex flex-wrap items-center gap-3">
-              <Enviar variante="secundario">Rehacer los {pendientes.length} mensajes pendientes</Enviar>
-              <p className="text-sm text-tenue">Los vuelve a escribir con las reglas actuales (por ejemplo, presentándose como Cauce). Pisa lo que hayas editado.</p>
-            </div>
-          </Formulario>
+          <div className="flex flex-wrap items-start gap-3">
+            <Formulario accion={nuevaTanda}>
+              <Enviar>Generar nueva tanda</Enviar>
+            </Formulario>
+            <Formulario accion={rehacerMensajes}>
+              <Enviar variante="secundario">Rehacer los {pendientes.length} mensajes</Enviar>
+            </Formulario>
+          </div>
+          <p className="text-sm text-tenue">
+            «Generar nueva tanda» devuelve a la lista los {pendientes.length} que no mandaste y elige otros, con mensajes nuevos. «Rehacer» deja los mismos negocios y
+            solo vuelve a escribir los mensajes. Los dos pisan lo que hayas editado. Lo que ya mandaste hoy sigue contando para el límite diario.
+          </p>
           <ul className="flex flex-col gap-4">
             {pendientes.map((p) => (
               <li key={p.id} className="flex flex-col gap-3 rounded-lg border border-linea p-4">
