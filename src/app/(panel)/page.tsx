@@ -8,7 +8,8 @@ import type { Prospecto } from "@/lib/dominio/tipos";
 import { AreaTexto, Aviso, Encabezado, Etiqueta, Tarjeta, TituloSeccion, Vacio } from "@/components/ui";
 import { Formulario, Enviar } from "@/components/formulario";
 import { AbrirWhatsApp } from "@/components/abrir-whatsapp";
-import { armarTanda, guardarMensajeInicial, marcarEnviado, nuevaTanda, rehacerMensajes, sacarDeTanda } from "../acciones";
+import { armarTanda, guardarMensajeInicial, marcarEnviado, nuevaTanda, rehacerMensajes, sacarDeTanda, sinWhatsApp } from "../acciones";
+import { chanceWhatsApp } from "@/lib/dominio/telefono";
 
 export const metadata = { title: "Hoy" };
 
@@ -134,6 +135,11 @@ export default async function Hoy() {
                   </div>
                   <span className="flex flex-wrap gap-1.5">
                     <Etiqueta tono="neutro">{LINEAS[lineaDeRubro(p.rubro) ?? "a_medida"].etiqueta}</Etiqueta>
+                    {chanceWhatsApp(p.telefono, p.telefono_wa) === "alta" ? (
+                      <Etiqueta tono="marca">Celular</Etiqueta>
+                    ) : (
+                      <Etiqueta tono="neutro">WhatsApp sin confirmar</Etiqueta>
+                    )}
                     <Etiqueta tono={p.prioridad === "A" ? "marca" : "neutro"}>Prioridad {p.prioridad}</Etiqueta>
                   </span>
                 </div>
@@ -164,6 +170,12 @@ export default async function Hoy() {
                     <input type="hidden" name="no_contactar" value="1" />
                     <button className="font-semibold text-debe">No contactar</button>
                   </form>
+                  <Formulario accion={sinWhatsApp} className="gap-1">
+                    <input type="hidden" name="id" value={p.id} />
+                    <button className="font-semibold text-tenue hover:text-tinta" title="Si WhatsApp te dice que el número no está en WhatsApp: lo saca y suma otro en su lugar">
+                      No tiene WhatsApp
+                    </button>
+                  </Formulario>
                 </div>
               </li>
             ))}

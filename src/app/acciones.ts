@@ -62,7 +62,7 @@ async function armar(evitar: string[]): Promise<EstadoAccion> {
   const limite = env().TANDA_LIMITE - (yaHoy ?? 0);
   if (limite <= 0) return fallo(`Ya armaste la tanda de hoy (${env().TANDA_LIMITE}). Mañana sigue.`);
 
-  const { data } = await db().from("prospectos").select("id, estado, prioridad, telefono_wa, ciudad, resenas, rubro").eq("estado", "sin_contactar");
+  const { data } = await db().from("prospectos").select("id, estado, prioridad, telefono, telefono_wa, ciudad, resenas, rubro").eq("estado", "sin_contactar");
   const opciones = { limite, maxPorCiudad: env().TANDA_MAX_POR_CIUDAD, maxPorLinea: env().TANDA_MAX_POR_LINEA };
   const todos = (data ?? []) as Prospecto[];
   const fuera = new Set(evitar);
@@ -132,6 +132,25 @@ export async function rehacerMensajes(_: EstadoAccion, datos: FormData): Promise
   }
   revalidatePath("/");
   return exito(lista.length === 1 ? "Mensaje rehecho." : `Rehice ${lista.length} mensajes.`);
+}
+
+/**
+ * El número no tiene WhatsApp (lo avisa la app al tocar «Abrir WhatsApp»): sale de la tanda,
+ * no vuelve a elegirse y se suma otro prospecto en su lugar.
+ */
+export async function sinWhatsApp(_: EstadoAccion, datos: FormData): Promise<EstadoAccion> {
+  const id = uuid.safeParse(datos.get("id"));
+  if (!id.success) return fallo("Prospecto inválido.");
+  const { data: p } = await db().from("prospectos").select("notas").eq("id", id.data).single();
+  const nota = `Sin WhatsApp (${hoyAR()})`;
+  await db()
+    .from("prospectos")
+    .update({ telefono_wa: null, estado: "sin_contactar", tanda_fecha: null, mensaje_inicial: null, notas: p?.notas ? `${p.notas}\n${nota}` : nota })
+    .eq("id", id.data)
+    .eq("estado", "en_tanda");
+  const r = await armar([id.data]);
+  revalidatePath("/");
+  return r.ok ? exito("Listo, lo saqué y sumé otro en su lugar.") : exito("Listo, lo saqué de la lista.");
 }
 
 export async function sacarDeTanda(datos: FormData) {

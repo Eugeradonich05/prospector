@@ -132,6 +132,7 @@ Creá una API key en console.anthropic.com y cargala en `ANTHROPIC_API_KEY`. El 
 ## Uso diario
 
 1. **Hoy → Armar tanda de hoy.** La tanda mezcla servicios (como mucho `TANDA_MAX_POR_LINEA` de cada uno) y cada mensaje habla de lo que le sirve a ese rubro. Revisá los mensajes, editá si querés, y mandalos espaciados durante el día. No los 15 de golpe.
+   Los números que en Google Maps figuran como fijos (sin el 9 y empezando con 4) no entran en las tandas, y los que figuran como celular van primero: en la tarjeta se ve «Celular» o «WhatsApp sin confirmar». Si al tocar «Abrir WhatsApp» la app te dice que el número no está en WhatsApp, tocá **«No tiene WhatsApp»**: lo saca para siempre y suma otro en su lugar.
 2. **Prospectos:** filtrá por servicio para ver cuántos respondieron sobre cuántos contactaste en cada uno, y así saber qué rubro conviene empujar.
 3. **Te necesitan:** respondé esas conversaciones desde el panel o desde el celular. Al escribir vos, el bot se corre 12 horas.
 4. **Seguimientos:** a los 3 días sin respuesta, un único recordatorio.
@@ -149,7 +150,7 @@ Creá una API key en console.anthropic.com y cargala en `ANTHROPIC_API_KEY`. El 
 npm install
 cp .env.example .env.local
 npm run dev        # http://localhost:3000
-npm run check      # tipos + 55 tests (bot y servicios por rubro) + test de base de datos
+npm run check      # tipos + 57 tests (bot y servicios por rubro) + test de base de datos
 ```
 
 ## Límites conocidos

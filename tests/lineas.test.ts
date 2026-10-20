@@ -127,3 +127,27 @@ describe("elegirTanda por servicio", () => {
     expect(elegirTanda(c, { limite: 5, maxPorCiudad: 5, lineas: ["turnos"] })).toEqual(["t1"]);
   });
 });
+
+describe("chance de WhatsApp", () => {
+  it("reconoce celulares, fijos y dudosos por cómo figuran en Google Maps", async () => {
+    const { chanceWhatsApp } = await import("@/lib/dominio/telefono");
+    expect(chanceWhatsApp("+54 9 11 5347-9309")).toBe("alta");
+    expect(chanceWhatsApp("+54 9 341 555-1234")).toBe("alta");
+    expect(chanceWhatsApp("0341 15-555-1234")).toBe("alta");
+    expect(chanceWhatsApp("+54 341 412-7277")).toBe("baja");
+    expect(chanceWhatsApp("+54 11 4581-7963")).toBe("baja");
+    expect(chanceWhatsApp("+54 11 3420-4252")).toBe("media");
+    expect(chanceWhatsApp("+54 351 635-8600")).toBe("media");
+    expect(chanceWhatsApp(null, "5493410000000")).toBe("media");
+  });
+
+  it("la tanda saltea fijos y pone primero los celulares", () => {
+    const base = { estado: "sin_contactar" as const, prioridad: "A" as const, telefono_wa: "5493410000000", rubro: "Peluquería", resenas: 10 };
+    const c = [
+      { ...base, id: "fijo", ciudad: "Rosario", telefono: "+54 341 412-7277", resenas: 500 },
+      { ...base, id: "dudoso", ciudad: "Córdoba", telefono: "+54 351 635-8600", resenas: 300 },
+      { ...base, id: "celular", ciudad: "Mendoza", telefono: "+54 9 261 555-1234", resenas: 5 },
+    ];
+    expect(elegirTanda(c, { limite: 5, maxPorCiudad: 5 })).toEqual(["celular", "dudoso"]);
+  });
+});

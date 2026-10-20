@@ -1,4 +1,5 @@
 import { LINEAS, lineaDeRubro, type Linea } from "./lineas";
+import { chanceWhatsApp } from "./telefono";
 import type { Prospecto } from "./tipos";
 
 /**
@@ -8,15 +9,17 @@ import type { Prospecto } from "./tipos";
  * Los complejos de canchas no entran nunca: van por Modo Cancha.
  */
 export function elegirTanda(
-  candidatos: (Pick<Prospecto, "id" | "estado" | "prioridad" | "telefono_wa" | "ciudad" | "resenas"> & { rubro?: string | null })[],
+  candidatos: (Pick<Prospecto, "id" | "estado" | "prioridad" | "telefono_wa" | "ciudad" | "resenas"> & { rubro?: string | null; telefono?: string | null })[],
   opciones: { limite: number; maxPorCiudad: number; maxPorLinea?: number; lineas?: Linea[] },
 ): string[] {
   const orden = { A: 0, B: 1, C: 2 } as const;
+  const chance = { alta: 0, media: 1, baja: 2 } as const;
   const permitidas = opciones.lineas?.length ? new Set(opciones.lineas) : null;
   const disponibles = candidatos
-    .map((p) => ({ p, linea: lineaDeRubro(p.rubro) }))
-    .filter(({ p, linea }) => p.estado === "sin_contactar" && p.telefono_wa && linea !== null && (!permitidas || permitidas.has(linea)))
-    .sort((a, b) => orden[a.p.prioridad] - orden[b.p.prioridad] || (b.p.resenas ?? 0) - (a.p.resenas ?? 0));
+    .map((p) => ({ p, linea: lineaDeRubro(p.rubro), wa: p.telefono === undefined ? "media" : chanceWhatsApp(p.telefono, p.telefono_wa) }))
+    // Los que casi seguro son fijos (sin WhatsApp) no entran; primero van los que figuran como celular.
+    .filter(({ p, linea, wa }) => p.estado === "sin_contactar" && p.telefono_wa && wa !== "baja" && linea !== null && (!permitidas || permitidas.has(linea)))
+    .sort((a, b) => chance[a.wa] - chance[b.wa] || orden[a.p.prioridad] - orden[b.p.prioridad] || (b.p.resenas ?? 0) - (a.p.resenas ?? 0));
 
   const maxPorLinea = opciones.maxPorLinea ?? opciones.limite;
   const porCiudad = new Map<string, number>();
