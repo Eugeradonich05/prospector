@@ -1,11 +1,23 @@
 /**
  * Líneas de servicio de Cauce que se ofrecen por prospección.
  * Cada rubro cae en una línea, y la línea decide el primer mensaje, el seguimiento
- * y lo que el bot ofrece. Modo Cancha (complejos de canchas) va por separado: esos
- * rubros quedan afuera de las tandas y el bot los deriva.
+ * y lo que el bot ofrece. Modo Cancha (complejos de canchas) tiene su propia línea y su propia
+ * pestaña: no se mezcla con las tandas de Cauce (ver `LINEAS_CAUCE`).
  */
 
-export type Linea = "cuotas" | "turnos" | "documentos" | "a_medida";
+export type Linea = "cuotas" | "turnos" | "documentos" | "a_medida" | "canchas";
+
+/** Las líneas de la tanda general de Cauce. Modo Cancha se arma aparte, desde su pestaña. */
+export type LineaCauce = Exclude<Linea, "canchas">;
+export const LINEAS_CAUCE: LineaCauce[] = ["cuotas", "turnos", "documentos", "a_medida"];
+
+/** Link de la prueba gratis de Modo Cancha (el complejo se registra solo). */
+export const LINK_MODO_CANCHA = "https://www.modocanchas.com/prueba-gratis";
+
+/** Marca con la que se presenta cada línea. */
+export function marcaDe(linea: Linea): "Cauce" | "Modo Cancha" {
+  return linea === "canchas" ? "Modo Cancha" : "Cauce";
+}
 
 export type InfoLinea = {
   /** Nombre corto para el panel. */
@@ -70,13 +82,27 @@ export const LINEAS: Record<Linea, InfoLinea> = {
     ],
     seguimiento: (n) => `Hola de nuevo! Les escribimos de Cauce una sola vez más por lo de automatizar tareas en ${n}. Si no es buen momento, ningún problema y no los molestamos más. ¡Éxitos!`,
   },
+  canchas: {
+    etiqueta: "Modo Cancha",
+    gancho:
+      "Modo Cancha, una plataforma de reservas online: los jugadores ven los horarios libres, reservan y pagan la seña con Mercado Pago, y el complejo maneja canchas, precios y reservas desde un panel",
+    pregunta: "¿cómo toman hoy las reservas de las canchas?",
+    plantillas: [
+      (n, r) =>
+        `Hola! ¿Hablo con ${n}? Te escribimos de Modo Cancha. Armamos una plataforma para ${articuloRubro(r)} donde los jugadores ven los horarios libres, reservan y pagan la seña con Mercado Pago, sin llamar ni escribir. ¿Cómo toman hoy las reservas?`,
+      (n) =>
+        `Hola, ¿qué tal? ¿Es ${n}? Te escribimos de Modo Cancha. Una pregunta corta: ¿las reservas les llegan por WhatsApp y las anotan a mano? Armamos un sistema donde el jugador reserva solo y deja la seña pagada con Mercado Pago, y queremos saber cómo lo manejan ustedes.`,
+    ],
+    seguimiento: (n) =>
+      `Hola de nuevo! Les escribimos de Modo Cancha una sola vez más por lo de las reservas de ${n}. Si quieren verlo, la prueba es gratis: ${LINK_MODO_CANCHA}. Si no es buen momento, ningún problema y no los molestamos más. ¡Éxitos!`,
+  },
 };
 
 function sinTildes(s: string): string {
   return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 }
 
-/** Complejos de canchas: van por Modo Cancha, no por esta prospección. */
+/** Complejos de canchas: línea Modo Cancha. */
 const CANCHAS = /cancha|padel|paddle|futbol|futsal|tenis|squash|complejo deportivo|beach voley/;
 
 const REGLAS: [RegExp, Linea][] = [
@@ -85,10 +111,10 @@ const REGLAS: [RegExp, Linea][] = [
   [/juridic|abogad|contab|contador|escriban|notari|estudio/, "documentos"],
 ];
 
-/** Línea de un rubro. `null` = no se prospecta (complejos de canchas → Modo Cancha). */
-export function lineaDeRubro(rubro: string | null | undefined): Linea | null {
+/** Línea de un rubro. Los complejos de canchas van a Modo Cancha; lo que no encaja en nada, a medida. */
+export function lineaDeRubro(rubro: string | null | undefined): Linea {
   const r = sinTildes(rubro ?? "");
-  if (CANCHAS.test(r)) return null;
+  if (CANCHAS.test(r)) return "canchas";
   for (const [patron, linea] of REGLAS) if (patron.test(r)) return linea;
   return "a_medida";
 }
@@ -110,6 +136,10 @@ export function articuloRubro(rubro: string): string {
     "taller mecánico": "talleres mecánicos",
     "estudio jurídico": "estudios jurídicos",
     "estudio contable": "estudios contables",
+    pádel: "complejos de pádel",
+    padel: "complejos de pádel",
+    "complejo deportivo": "complejos deportivos",
+    "complejo de fútbol": "complejos de fútbol",
   };
   if (especiales[r]) return especiales[r]!;
   const [primera, ...resto] = r.split(" ");

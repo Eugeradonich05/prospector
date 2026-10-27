@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LINEAS, articuloRubro, lineaDeRubro, plantillaPara, type Linea } from "@/lib/dominio/lineas";
+import { LINEAS, articuloRubro, lineaDeRubro, marcaDe, plantillaPara, type Linea } from "@/lib/dominio/lineas";
 import { elegirTanda, mensajeSeguimiento } from "@/lib/dominio/tandas";
 import { instrucciones } from "@/lib/bot/conocimiento";
 
@@ -20,10 +20,11 @@ describe("lineaDeRubro", () => {
     expect(lineaDeRubro(null)).toBe("a_medida");
   });
 
-  it("deja afuera los complejos de canchas (van por Modo Cancha)", () => {
-    expect(lineaDeRubro("Pádel")).toBeNull();
-    expect(lineaDeRubro("Complejo de fútbol 5")).toBeNull();
-    expect(lineaDeRubro("Canchas de tenis")).toBeNull();
+  it("manda los complejos de canchas a Modo Cancha", () => {
+    expect(lineaDeRubro("Pádel")).toBe("canchas");
+    expect(lineaDeRubro("Complejo de fútbol")).toBe("canchas");
+    expect(lineaDeRubro("Complejo deportivo")).toBe("canchas");
+    expect(lineaDeRubro("Canchas de tenis")).toBe("canchas");
   });
 });
 
@@ -37,8 +38,8 @@ describe("mensajes por servicio", () => {
       expect(new Set(textos).size).toBe(textos.length);
       for (const t of textos) {
         expect(t).toContain("Lo de Ana");
-        expect(t).toContain("Cauce");
-        expect(t).not.toMatch(/Eugenio/); // los mensajes salen a nombre de Cauce
+        expect(t).toContain(marcaDe(l));
+        expect(t).not.toMatch(/Eugenio/); // los mensajes salen a nombre de la marca
         expect(t).not.toMatch(/\$\s?\d/); // nunca precios en el primer mensaje
         expect(t.length).toBeLessThan(500);
       }
@@ -51,6 +52,8 @@ describe("mensajes por servicio", () => {
     expect(LINEAS.turnos.plantillas[0]!("X", "Peluquería")).toMatch(/turno/);
     expect(LINEAS.documentos.plantillas[0]!("X", "Estudio jurídico")).toMatch(/documento y página/);
     expect(LINEAS.cuotas.plantillas[0]!("X", "Pilates")).toMatch(/cuota/);
+    expect(LINEAS.canchas.plantillas[0]!("X", "Pádel")).toMatch(/complejos de pádel.*seña/);
+    expect(LINEAS.canchas.plantillas[1]!("X", "Pádel")).not.toMatch(/Cauce/);
   });
 
   it("elige la plantilla de forma estable por negocio", () => {
@@ -70,6 +73,7 @@ describe("mensajes por servicio", () => {
     expect(mensajeSeguimiento("Bucles", "Peluquería")).toMatch(/turnos/);
     expect(mensajeSeguimiento("Estudio Pérez", "Estudio jurídico")).not.toMatch(/cuotas|turnos/);
     expect(mensajeSeguimiento("Taller Gus", "Taller mecánico")).toMatch(/automatizar/);
+    expect(mensajeSeguimiento("La Bombonera 5", "Complejo de fútbol")).toMatch(/Modo Cancha.*reservas.*prueba-gratis/);
   });
 
   it("pone los rubros en plural para las frases", () => {
@@ -77,16 +81,28 @@ describe("mensajes por servicio", () => {
     expect(articuloRubro("Estudio contable")).toBe("estudios contables");
     expect(articuloRubro("Funcional / crossfit")).toBe("estudios de funcional");
     expect(articuloRubro("Inmobiliaria")).toBe("inmobiliarias");
+    expect(articuloRubro("Complejo deportivo")).toBe("complejos deportivos");
+    expect(articuloRubro("Complejo de fútbol")).toBe("complejos de fútbol");
   });
 });
 
 describe("conocimiento del bot por servicio", () => {
-  it("solo da precios de Cuotas al día y nunca ofrece Modo Cancha", () => {
+  it("solo da precios de Cuotas al día y no ofrece Modo Cancha a otros rubros", () => {
     const turnos = instrucciones({ linea: "turnos" });
     expect(turnos).toContain("Bot de WhatsApp para turnos");
     expect(turnos).toContain("Nunca des un número para esos servicios");
-    expect(turnos).toMatch(/Modo Cancha .*no se ofrece por acá/);
+    expect(turnos).toMatch(/Modo Cancha .*no se ofrece en esta charla/);
     expect(instrucciones({ linea: "cuotas" })).toContain("$24.900");
+  });
+
+  it("con los complejos habla como Modo Cancha, con su prueba gratis y sin precios", () => {
+    const canchas = instrucciones({ linea: "canchas", linkSitio: "https://cauce.test" });
+    expect(canchas).toContain("Sos el asistente virtual de Modo Cancha");
+    expect(canchas).toContain("https://www.modocanchas.com/prueba-gratis");
+    expect(canchas).toContain("paga la seña con Mercado Pago");
+    expect(canchas).not.toMatch(/\$\s?\d/);
+    expect(canchas).not.toContain("Cuotas al día");
+    expect(canchas).not.toContain("https://cauce.test");
   });
 
   it("el link de prueba solo aparece para Cuotas al día", () => {
@@ -117,9 +133,19 @@ describe("elegirTanda por servicio", () => {
     expect(elegirTanda(c, { limite: 4, maxPorCiudad: 5, maxPorLinea: 2 })).toEqual(["g1", "g2", "t1", "d1"]);
   });
 
-  it("nunca elige complejos de canchas", () => {
+  it("la tanda de Cauce no elige complejos de canchas", () => {
     const c = [p("c1", "Pádel", "Rosario", 999), p("t1", "Barbería", "Rosario")];
     expect(elegirTanda(c, { limite: 5, maxPorCiudad: 5 })).toEqual(["t1"]);
+  });
+
+  it("la tanda de Modo Cancha elige solo complejos, celulares primero, y prueba los fijos", () => {
+    const c = [
+      { ...p("f1", "Complejo de fútbol", "San Nicolás", 300), telefono: "+54 336 466-7711" },
+      { ...p("c1", "Pádel", "Rosario", 20), telefono: "+54 9 341 555-1234" },
+      { ...p("t1", "Barbería", "Rosario", 500), telefono: "+54 9 341 555-0000" },
+    ];
+    expect(elegirTanda(c, { limite: 5, maxPorCiudad: 5, lineas: ["canchas"], incluirFijos: true })).toEqual(["c1", "f1"]);
+    expect(elegirTanda(c, { limite: 5, maxPorCiudad: 5, lineas: ["canchas"] })).toEqual(["c1"]);
   });
 
   it("puede limitarse a algunos servicios", () => {

@@ -29,6 +29,8 @@ const esquema = z.object({
 
   // Cómo se comporta el bot
   TANDA_LIMITE: z.coerce.number().int().min(1).max(40).default(15),
+  // Tanda aparte de Modo Cancha (complejos de canchas). Sale del mismo número: sumá los dos límites al cuidar el número.
+  TANDA_LIMITE_CANCHAS: z.coerce.number().int().min(1).max(40).default(10),
   TANDA_MAX_POR_CIUDAD: z.coerce.number().int().min(1).max(40).default(6),
   // Tope por servicio (Cuotas al día, turnos, documentos, a medida) para que cada tanda mezcle rubros
   TANDA_MAX_POR_LINEA: z.coerce.number().int().min(1).max(40).default(4),

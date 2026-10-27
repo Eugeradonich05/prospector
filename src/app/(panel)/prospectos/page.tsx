@@ -8,11 +8,10 @@ export const metadata = { title: "Prospectos" };
 
 export default async function Prospectos({ searchParams }: { searchParams: Promise<{ estado?: string; linea?: string }> }) {
   const { estado, linea } = await searchParams;
-  const { data } = await db().from("prospectos").select("id, nombre, rubro, ciudad, prioridad, estado, contactado_el, ultimo_entrante_el").order("prioridad").order("ciudad").limit(2000);
+  const { data } = await db().from("prospectos").select("id, nombre, rubro, ciudad, prioridad, estado, contactado_el, ultimo_entrante_el").order("prioridad").order("ciudad").limit(3000);
   const base = (data ?? []) as Prospecto[];
-  const lineaValida = linea && linea in LINEAS ? (linea as Linea) : linea === "canchas" ? "canchas" : null;
-  // Los complejos de canchas (Modo Cancha) no se prospectan desde acá: se ven aparte.
-  const deLinea = (p: Prospecto) => lineaDeRubro(p.rubro) ?? "canchas";
+  const lineaValida = linea && linea in LINEAS ? (linea as Linea) : null;
+  const deLinea = (p: Prospecto) => lineaDeRubro(p.rubro);
   const todos = lineaValida ? base.filter((p) => deLinea(p) === lineaValida) : base;
   const valido = estado && estado in ETIQUETA_ESTADO ? (estado as EstadoProspecto) : null;
   const lista = valido ? todos.filter((p) => p.estado === valido) : todos;
@@ -27,10 +26,7 @@ export default async function Prospectos({ searchParams }: { searchParams: Promi
     if (l) q.set("linea", l);
     return `/prospectos${q.size ? `?${q}` : ""}`;
   };
-  const opcionesLinea: { id: string; etiqueta: string }[] = [
-    ...(Object.keys(LINEAS) as Linea[]).map((l) => ({ id: l, etiqueta: LINEAS[l].etiqueta })),
-    ...(base.some((p) => deLinea(p) === "canchas") ? [{ id: "canchas", etiqueta: "Canchas (Modo Cancha, aparte)" }] : []),
-  ];
+  const opcionesLinea = (Object.keys(LINEAS) as Linea[]).map((l) => ({ id: l, etiqueta: LINEAS[l].etiqueta }));
 
   return (
     <>
@@ -93,7 +89,7 @@ export default async function Prospectos({ searchParams }: { searchParams: Promi
                 </td>
                 <td className="text-tenue">
                   {p.rubro}
-                  <span className="block text-xs">{lineaDeRubro(p.rubro) ? LINEAS[lineaDeRubro(p.rubro)!].etiqueta : "Modo Cancha (aparte)"}</span>
+                  <span className="block text-xs">{LINEAS[lineaDeRubro(p.rubro)].etiqueta}</span>
                 </td>
                 <td className="text-tenue">{p.ciudad}</td>
                 <td className="num">{p.prioridad}</td>

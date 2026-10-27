@@ -7,6 +7,7 @@ import { cx } from "@/components/ui";
 const ITEMS = [
   { href: "/", texto: "Hoy" },
   { href: "/conversaciones", texto: "Conversaciones" },
+  { href: "/modo-cancha", texto: "Modo Cancha" },
   { href: "/prospectos", texto: "Prospectos" },
   { href: "/conectar", texto: "Conectar WhatsApp" },
 ];

@@ -9,7 +9,7 @@ Bot de prospección por WhatsApp para **Cauce**: ofrece a cada negocio la automa
 | Documentos y avisos | Estudios jurídicos y contables, escribanías | Buscador con la cita exacta (documento y página) y avisos de vencimientos |
 | Automatización a medida | Inmobiliarias, talleres y otros | Respuestas automáticas, avisos («ya está listo», vencimientos) y reportes |
 
-**Modo Cancha no entra acá:** los complejos de canchas nunca se eligen para una tanda y, si alguno escribe, el bot se lo deriva a Eugenio. El servicio de cada prospecto sale de su rubro (`src/lib/dominio/lineas.ts`).
+**Modo Cancha va en su pestaña:** los complejos de canchas (fútbol, pádel, deportivos) tienen su propia tanda en `/modo-cancha`, con mensajes que se presentan como Modo Cancha, su propio límite diario (`TANDA_LIMITE_CANCHAS`) y un bot que solo habla de reservas y de la prueba gratis. La tanda de Hoy nunca los mezcla. El servicio de cada prospecto sale de su rubro (`src/lib/dominio/lineas.ts`).
 
 - **Vos mandás el primer mensaje**, en tandas diarias que arma el panel: ~15 prospectos por día, cada uno con un mensaje distinto escrito por Claude. Tocás «Abrir WhatsApp» y «Enviar». Son unos 5 minutos.
 - **El bot contesta solo** cuando el negocio responde: pregunta cómo cobran, explica el producto, ofrece la prueba gratis y **te pasa la conversación** cuando hay interés real, mandan un audio o algo se complica.
@@ -56,6 +56,7 @@ Creá un proyecto nuevo (el plan gratis alcanza) y ejecutá en el SQL Editor, en
 1. `supabase/migrations/20261014000001_prospector.sql`
 2. `supabase/seed.sql`, con los 145 prospectos de Cuotas al día (135 tienen WhatsApp).
 3. `supabase/seed-cauce.sql`, con 524 prospectos de los otros servicios (peluquerías, estudios, inmobiliarias, etc.), todos con WhatsApp. Si ya tenés la base andando, ejecutá solo este archivo: no toca lo que ya contactaste.
+4. `supabase/seed-canchas.sql`, con 455 complejos de canchas de 21 provincias para Modo Cancha (67 figuran como celular; el resto puede ser fijo, por eso esa tanda sí los prueba y se descartan con «No tiene WhatsApp»). Se puede correr aparte y más de una vez.
 
 ### 2. Tu número en la API sin perder la app (coexistencia)
 

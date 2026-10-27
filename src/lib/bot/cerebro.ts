@@ -33,7 +33,7 @@ export function transcripcion(ctx: ContextoConversacion): string {
     .join("; ");
   return [
     `NEGOCIO: ${ctx.prospecto.nombre} (${ctx.prospecto.rubro ?? "rubro desconocido"}, ${ctx.prospecto.ciudad ?? "ciudad desconocida"})`,
-    `LO QUE LE OFRECIÓ EUGENIO EN EL PRIMER MENSAJE: ${LINEAS[lineaDeRubro(ctx.prospecto.rubro) ?? "a_medida"].etiqueta}`,
+    `LO QUE LE OFRECIÓ EUGENIO EN EL PRIMER MENSAJE: ${LINEAS[lineaDeRubro(ctx.prospecto.rubro)].etiqueta}`,
     datos ? `LO QUE YA SABEMOS: ${datos}` : "LO QUE YA SABEMOS: nada todavía",
     ctx.esPrimeraRespuestaDelBot ? "ES TU PRIMERA RESPUESTA en esta conversación." : "Ya te presentaste antes; no lo repitas.",
     "",

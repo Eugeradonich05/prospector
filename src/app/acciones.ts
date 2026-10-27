@@ -9,6 +9,7 @@ import { db } from "@/lib/datos/supabase";
 import { COOKIE_SESION, crearSesion, claveCorrecta } from "@/lib/sesion";
 import { exito, fallo, type EstadoAccion } from "@/lib/acciones";
 import { elegirTanda } from "@/lib/dominio/tandas";
+import { LINEAS_CAUCE, lineaDeRubro } from "@/lib/dominio/lineas";
 import { hoyAR } from "@/lib/dominio/fechas";
 import { redactarPrimerMensaje } from "@/lib/bot/claude";
 import { canalWhatsApp } from "@/lib/whatsapp/enviar";
@@ -38,32 +39,44 @@ export async function salir() {
 
 // ── Tandas ─────────────────────────────────────────────
 
-export async function armarTanda(_: EstadoAccion): Promise<EstadoAccion> {
-  return armar([]);
+/** Las tandas van por separado: la de Cauce (Hoy) y la de Modo Cancha (su pestaña). */
+type Grupo = "cauce" | "canchas";
+const grupoDe = (rubro: string | null | undefined): Grupo => (lineaDeRubro(rubro) === "canchas" ? "canchas" : "cauce");
+const leerGrupo = (datos?: FormData): Grupo => (datos?.get("grupo") === "canchas" ? "canchas" : "cauce");
+
+export async function armarTanda(_: EstadoAccion, datos?: FormData): Promise<EstadoAccion> {
+  return armar([], leerGrupo(datos));
 }
 
 /**
  * Cambia la tanda por otra: los que todavía no mandaste vuelven a la lista (sin mensaje) y se eligen
  * otros prospectos con mensajes nuevos. Los que ya mandaste hoy siguen contando para el límite diario.
+ * Solo toca la tanda del mismo grupo (Cauce o Modo Cancha).
  */
-export async function nuevaTanda(_: EstadoAccion): Promise<EstadoAccion> {
-  const { data } = await db().from("prospectos").select("id").eq("estado", "en_tanda");
-  const devueltos = (data ?? []).map((p) => p.id as string);
+export async function nuevaTanda(_: EstadoAccion, datos?: FormData): Promise<EstadoAccion> {
+  const grupo = leerGrupo(datos);
+  const { data } = await db().from("prospectos").select("id, rubro").eq("estado", "en_tanda");
+  const devueltos = (data ?? []).filter((p) => grupoDe(p.rubro as string | null) === grupo).map((p) => p.id as string);
   if (devueltos.length) {
     await db().from("prospectos").update({ estado: "sin_contactar", tanda_fecha: null, mensaje_inicial: null }).in("id", devueltos).eq("estado", "en_tanda");
   }
-  return armar(devueltos);
+  return armar(devueltos, grupo);
 }
 
-/** Arma la tanda evitando, si se puede, los prospectos de `evitar` (los que se acaban de devolver). */
-async function armar(evitar: string[]): Promise<EstadoAccion> {
+async function armar(evitar: string[], grupo: Grupo): Promise<EstadoAccion> {
   const hoy = hoyAR();
-  const { count: yaHoy } = await db().from("prospectos").select("id", { count: "exact", head: true }).eq("tanda_fecha", hoy);
-  const limite = env().TANDA_LIMITE - (yaHoy ?? 0);
-  if (limite <= 0) return fallo(`Ya armaste la tanda de hoy (${env().TANDA_LIMITE}). Mañana sigue.`);
+  const { data: deHoy } = await db().from("prospectos").select("rubro").eq("tanda_fecha", hoy);
+  const yaHoy = (deHoy ?? []).filter((p) => grupoDe(p.rubro as string | null) === grupo).length;
+  const tope = grupo === "canchas" ? env().TANDA_LIMITE_CANCHAS : env().TANDA_LIMITE;
+  const limite = tope - yaHoy;
+  if (limite <= 0) return fallo(`Ya armaste la tanda de hoy${grupo === "canchas" ? " de Modo Cancha" : ""} (${tope}). Mañana sigue.`);
 
   const { data } = await db().from("prospectos").select("id, estado, prioridad, telefono, telefono_wa, ciudad, resenas, rubro").eq("estado", "sin_contactar");
-  const opciones = { limite, maxPorCiudad: env().TANDA_MAX_POR_CIUDAD, maxPorLinea: env().TANDA_MAX_POR_LINEA };
+  // Modo Cancha también prueba números que parecen fijos: en ciudades medianas los celulares empiezan con 4.
+  const opciones =
+    grupo === "canchas"
+      ? { limite, maxPorCiudad: env().TANDA_MAX_POR_CIUDAD, lineas: ["canchas" as const], incluirFijos: true }
+      : { limite, maxPorCiudad: env().TANDA_MAX_POR_CIUDAD, maxPorLinea: env().TANDA_MAX_POR_LINEA, lineas: LINEAS_CAUCE };
   const todos = (data ?? []) as Prospecto[];
   const fuera = new Set(evitar);
   let ids = elegirTanda(todos.filter((p) => !fuera.has(p.id)), opciones);
@@ -85,7 +98,7 @@ async function armar(evitar: string[]): Promise<EstadoAccion> {
       }),
     );
   }
-  revalidatePath("/");
+  revalidatePath("/", "layout");
   return exito(`Tanda lista: ${lista.length} prospectos con su mensaje.`);
 }
 
@@ -95,7 +108,7 @@ export async function guardarMensajeInicial(_: EstadoAccion, datos: FormData): P
   if (!id.success) return fallo("Prospecto inválido.");
   if (!texto.success) return fallo(texto.error.issues[0]!.message);
   await db().from("prospectos").update({ mensaje_inicial: texto.data }).eq("id", id.data);
-  revalidatePath("/");
+  revalidatePath("/", "layout");
   return exito("Mensaje guardado.");
 }
 
@@ -107,7 +120,7 @@ export async function marcarEnviado(datos: FormData) {
   const ahora = new Date().toISOString();
   if (tipo === "seguimiento") await db().from("prospectos").update({ seguimiento_el: ahora }).eq("id", id.data);
   else await db().from("prospectos").update({ estado: "contactado", contactado_el: ahora }).eq("id", id.data).in("estado", ["en_tanda", "sin_contactar"]);
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }
 
 /**
@@ -120,7 +133,8 @@ export async function rehacerMensajes(_: EstadoAccion, datos: FormData): Promise
   let consulta = db().from("prospectos").select("id, nombre, rubro, ciudad").eq("estado", "en_tanda");
   if (id?.success) consulta = consulta.eq("id", id.data);
   const { data } = await consulta;
-  const lista = (data ?? []) as Pick<Prospecto, "id" | "nombre" | "rubro" | "ciudad">[];
+  const grupo = leerGrupo(datos);
+  const lista = ((data ?? []) as Pick<Prospecto, "id" | "nombre" | "rubro" | "ciudad">[]).filter((p) => id?.success || grupoDe(p.rubro) === grupo);
   if (!lista.length) return fallo("No hay mensajes pendientes para rehacer.");
   for (let i = 0; i < lista.length; i += 3) {
     await Promise.all(
@@ -130,7 +144,7 @@ export async function rehacerMensajes(_: EstadoAccion, datos: FormData): Promise
       }),
     );
   }
-  revalidatePath("/");
+  revalidatePath("/", "layout");
   return exito(lista.length === 1 ? "Mensaje rehecho." : `Rehice ${lista.length} mensajes.`);
 }
 
@@ -141,15 +155,15 @@ export async function rehacerMensajes(_: EstadoAccion, datos: FormData): Promise
 export async function sinWhatsApp(_: EstadoAccion, datos: FormData): Promise<EstadoAccion> {
   const id = uuid.safeParse(datos.get("id"));
   if (!id.success) return fallo("Prospecto inválido.");
-  const { data: p } = await db().from("prospectos").select("notas").eq("id", id.data).single();
+  const { data: p } = await db().from("prospectos").select("notas, rubro").eq("id", id.data).single();
   const nota = `Sin WhatsApp (${hoyAR()})`;
   await db()
     .from("prospectos")
     .update({ telefono_wa: null, estado: "sin_contactar", tanda_fecha: null, mensaje_inicial: null, notas: p?.notas ? `${p.notas}\n${nota}` : nota })
     .eq("id", id.data)
     .eq("estado", "en_tanda");
-  const r = await armar([id.data]);
-  revalidatePath("/");
+  const r = await armar([id.data], grupoDe(p?.rubro as string | null));
+  revalidatePath("/", "layout");
   return r.ok ? exito("Listo, lo saqué y sumé otro en su lugar.") : exito("Listo, lo saqué de la lista.");
 }
 
@@ -158,7 +172,7 @@ export async function sacarDeTanda(datos: FormData) {
   if (!id.success) return;
   const nuevo = datos.get("no_contactar") === "1" ? "no_contactar" : "sin_contactar";
   await db().from("prospectos").update({ estado: nuevo, tanda_fecha: nuevo === "sin_contactar" ? null : hoyAR() }).eq("id", id.data).eq("estado", "en_tanda");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }
 
 // ── Conversaciones ─────────────────────────────────────
@@ -201,7 +215,7 @@ export async function actualizarProspecto(_: EstadoAccion, datos: FormData): Pro
     })
     .eq("id", id.data);
   revalidatePath(`/conversaciones/${id.data}`);
-  revalidatePath("/");
+  revalidatePath("/", "layout");
   return exito("Guardado.");
 }
 

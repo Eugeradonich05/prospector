@@ -2,7 +2,7 @@ import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import { env } from "@/lib/env";
 import { instrucciones } from "./conocimiento";
-import { LINEAS, lineaDeRubro, plantillaPara, type Linea } from "@/lib/dominio/lineas";
+import { LINEAS, lineaDeRubro, marcaDe, plantillaPara, type Linea } from "@/lib/dominio/lineas";
 import { ESQUEMA_RESPUESTA, normalizarDecision, transcripcion, type Cerebro } from "./cerebro";
 
 let cliente: Anthropic | null = null;
@@ -36,6 +36,8 @@ const ENFOQUE: Record<Linea, string> = {
     "Objetivo: preguntar cuánto tiempo se les va buscando datos en expedientes o documentación, o avisando vencimientos a clientes. Mencioná en una frase el buscador que responde con la cita exacta (documento y página) aunque el PDF esté escaneado. Para estudios contables podés nombrar también los avisos de vencimientos a clientes.",
   a_medida:
     "Objetivo: preguntar qué tarea repiten todos los días que les gustaría que se haga sola. Mencioná en una frase un ejemplo que encaje con el rubro: para inmobiliarias, contestar las consultas de propiedades por WhatsApp y avisar vencimientos de alquileres; para talleres, avisar «tu auto ya está listo» y agendar turnos; para otros, avisos y respuestas automáticas por WhatsApp.",
+  canchas:
+    "Objetivo: preguntar cómo toman hoy las reservas de las canchas (WhatsApp, teléfono, cuaderno). Mencioná en una frase que Modo Cancha es una plataforma donde los jugadores ven los horarios libres, reservan y pagan la seña con Mercado Pago, y el complejo lo maneja todo desde un panel. Hablá del deporte del rubro (fútbol 5, pádel o canchas en general si es un complejo deportivo).",
 };
 
 /**
@@ -45,16 +47,21 @@ const ENFOQUE: Record<Linea, string> = {
  */
 export async function redactarPrimerMensaje(p: { nombre: string; rubro: string | null; ciudad: string | null }): Promise<string> {
   const rubro = p.rubro ?? "negocio";
-  const linea = lineaDeRubro(p.rubro) ?? "a_medida";
+  const linea = lineaDeRubro(p.rubro);
+  const marca = marcaDe(linea);
+  const quien =
+    linea === "canchas"
+      ? "Modo Cancha (plataforma de reservas de canchas online, hecha por Cauce de Rosario) le manda a un complejo de canchas que no la conoce. Escribís como la marca, en primera persona del plural (\"te escribimos de Modo Cancha\", \"armamos\"), sin nombres de personas. "
+      : "Cauce (automatización de procesos, Rosario) le manda a un negocio que no lo conoce. Escribís como la marca, en primera persona del plural (\"te escribimos de Cauce\", \"armamos\"), sin nombres de personas. ";
   try {
     const r = await anthropic().messages.create({
       model: env().ANTHROPIC_MODEL,
       max_tokens: 300,
       system:
-        "Escribís el primer mensaje de WhatsApp que Cauce (automatización de procesos, Rosario) le manda a un negocio que no lo conoce. Escribís como la marca, en primera persona del plural (\"te escribimos de Cauce\", \"armamos\"), sin nombres de personas. " +
+        `Escribís el primer mensaje de WhatsApp que ${quien}` +
         `${ENFOQUE[linea]} NO vendas ni pongas precios. ` +
         "Castellano rioplatense, 3 a 4 oraciones, cálido y directo, sin emojis, sin markdown, sin inventar nada sobre el negocio (no digas que viste reseñas, fotos ni su web). " +
-        "Presentate como Cauce. Cerrá con una pregunta simple. Respondé solo con el mensaje.",
+        `Presentate como ${marca}. Cerrá con una pregunta simple. Respondé solo con el mensaje.`,
       messages: [{ role: "user", content: `Negocio: ${p.nombre}. Rubro: ${rubro}. Ciudad: ${p.ciudad ?? "Argentina"}. Servicio que le puede servir: ${LINEAS[linea].gancho}.` }],
     });
     const texto = r.content.map((b) => (b.type === "text" ? b.text : "")).join("").trim();
@@ -67,5 +74,5 @@ export async function redactarPrimerMensaje(p: { nombre: string; rubro: string |
 
 /** Primer mensaje de respaldo: una de las plantillas de la línea del rubro. */
 export function plantillaPrimerMensaje(nombre: string, rubro: string): string {
-  return plantillaPara(lineaDeRubro(rubro) ?? "a_medida", nombre, rubro);
+  return plantillaPara(lineaDeRubro(rubro), nombre, rubro);
 }
