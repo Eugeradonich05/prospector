@@ -8,6 +8,8 @@ import { chanceWhatsApp } from "@/lib/dominio/telefono";
 import { ETIQUETA_ESTADO, type Prospecto } from "@/lib/dominio/tipos";
 import { Encabezado, Tabla, Tarjeta, TituloSeccion, Vacio } from "@/components/ui";
 import { SeccionSeguimientos, SeccionTanda, grupoDe } from "../tanda";
+import { Formulario, Enviar } from "@/components/formulario";
+import { cargarComplejos } from "../../acciones";
 
 export const metadata = { title: "Modo Cancha" };
 
@@ -41,7 +43,10 @@ export default async function ModoCancha() {
       <>
         <Encabezado titulo="Modo Cancha" detalle="Prospección de complejos de canchas" />
         <Vacio titulo="Todavía no hay complejos en la base">
-          Cargalos corriendo <code>supabase/seed-canchas.sql</code> en el SQL Editor de Supabase.
+          <Formulario accion={cargarComplejos}>
+            <p>Hay 455 complejos de fútbol, pádel y deportivos de 21 provincias listos para cargar. Tarda unos segundos.</p>
+            <Enviar>Cargar los complejos</Enviar>
+          </Formulario>
         </Vacio>
       </>
     );

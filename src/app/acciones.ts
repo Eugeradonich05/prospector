@@ -14,6 +14,7 @@ import { hoyAR } from "@/lib/dominio/fechas";
 import { redactarPrimerMensaje } from "@/lib/bot/claude";
 import { canalWhatsApp } from "@/lib/whatsapp/enviar";
 import type { EstadoProspecto, Prospecto } from "@/lib/dominio/tipos";
+import complejosCanchas from "@/lib/datos/complejos-canchas.json";
 
 const uuid = z.string().uuid();
 
@@ -100,6 +101,25 @@ async function armar(evitar: string[], grupo: Grupo): Promise<EstadoAccion> {
   }
   revalidatePath("/", "layout");
   return exito(`Tanda lista: ${lista.length} prospectos con su mensaje.`);
+}
+
+/**
+ * Carga en la base los complejos de canchas de Modo Cancha (lo mismo que supabase/seed-canchas.sql),
+ * para poder hacerlo desde el panel. Saltea los que ya están (mismo WhatsApp o mismo nombre y dirección).
+ */
+export async function cargarComplejos(_: EstadoAccion): Promise<EstadoAccion> {
+  const { data, error } = await db().from("prospectos").select("telefono_wa, nombre, direccion").limit(10000);
+  if (error) return fallo("No pude leer la base. Probá de nuevo.");
+  const telefonos = new Set((data ?? []).map((p) => p.telefono_wa).filter(Boolean));
+  const lugares = new Set((data ?? []).map((p) => `${p.nombre}|${p.direccion}`));
+  const nuevos = complejosCanchas.filter((c) => !telefonos.has(c.telefono_wa) && !lugares.has(`${c.nombre}|${c.direccion}`));
+  if (!nuevos.length) return exito("Los complejos ya estaban cargados.");
+  for (let i = 0; i < nuevos.length; i += 100) {
+    const { error: e } = await db().from("prospectos").insert(nuevos.slice(i, i + 100) as never);
+    if (e) return fallo(`Cargué ${i} y después falló: ${e.message}`);
+  }
+  revalidatePath("/", "layout");
+  return exito(`Listo: cargué ${nuevos.length} complejos.`);
 }
 
 export async function guardarMensajeInicial(_: EstadoAccion, datos: FormData): Promise<EstadoAccion> {
