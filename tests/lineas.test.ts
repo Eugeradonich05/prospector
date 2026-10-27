@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LINEAS, articuloRubro, lineaDeRubro, marcaDe, plantillaPara, type Linea } from "@/lib/dominio/lineas";
+import { LINEAS, articuloRubro, guionLlamada, lineaDeRubro, marcaDe, plantillaPara, type Linea } from "@/lib/dominio/lineas";
 import { elegirTanda, mensajeSeguimiento } from "@/lib/dominio/tandas";
 import { instrucciones } from "@/lib/bot/conocimiento";
 
@@ -54,6 +54,14 @@ describe("mensajes por servicio", () => {
     expect(LINEAS.cuotas.plantillas[0]!("X", "Pilates")).toMatch(/cuota/);
     expect(LINEAS.canchas.plantillas[0]!("X", "Pádel")).toMatch(/complejos de pádel.*seña/);
     expect(LINEAS.canchas.plantillas[1]!("X", "Pádel")).not.toMatch(/Cauce/);
+  });
+
+  it("arma un guion de llamada con la marca y la pregunta de cada servicio", () => {
+    const g = guionLlamada("canchas", "La Bombonera 5");
+    expect(g).toContain("Te llamo de Modo Cancha");
+    expect(g).toContain("¿Cómo toman hoy las reservas de las canchas?");
+    expect(g).not.toMatch(/\$\s?\d/);
+    expect(guionLlamada("turnos", "Bucles")).toContain("Te llamo de Cauce");
   });
 
   it("elige la plantilla de forma estable por negocio", () => {

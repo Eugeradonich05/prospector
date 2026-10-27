@@ -146,6 +146,13 @@ export function articuloRubro(rubro: string): string {
   return [plural(primera!), ...resto].join(" ");
 }
 
+/** Guion corto para llamar por teléfono cuando el número no tiene WhatsApp (suele ser un fijo). */
+export function guionLlamada(linea: Linea, nombre: string): string {
+  const { gancho, pregunta } = LINEAS[linea];
+  const preguntaMayuscula = pregunta.replace(/^¿(.)/, (_, c: string) => `¿${c.toUpperCase()}`);
+  return `Hola, ¿hablo con ${nombre}? Te llamo de ${marcaDe(linea)}, de Rosario. Armamos ${gancho}. ${preguntaMayuscula} Si te interesa, ¿a qué WhatsApp o mail te mandamos la info?`;
+}
+
 /** Elige una de las plantillas de forma estable para cada negocio (así dos negocios seguidos no reciben el mismo texto). */
 export function plantillaPara(linea: Linea, nombre: string, rubro: string): string {
   const opciones = LINEAS[linea].plantillas;

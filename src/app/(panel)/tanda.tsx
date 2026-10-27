@@ -1,11 +1,12 @@
 import { mensajeSeguimiento } from "@/lib/dominio/tandas";
-import { LINEAS, lineaDeRubro } from "@/lib/dominio/lineas";
+import { LINEAS, guionLlamada, lineaDeRubro } from "@/lib/dominio/lineas";
 import { chanceWhatsApp } from "@/lib/dominio/telefono";
 import type { Prospecto } from "@/lib/dominio/tipos";
 import { AreaTexto, Aviso, Etiqueta, Tarjeta, TituloSeccion } from "@/components/ui";
 import { Formulario, Enviar } from "@/components/formulario";
 import { AbrirWhatsApp } from "@/components/abrir-whatsapp";
-import { armarTanda, guardarMensajeInicial, marcarEnviado, nuevaTanda, rehacerMensajes, sacarDeTanda, sinWhatsApp } from "../acciones";
+import { Copiar } from "@/components/copiar";
+import { armarTanda, contactadoPorOtroMedio, guardarMensajeInicial, marcarEnviado, nuevaTanda, rehacerMensajes, sacarDeTanda, sinWhatsApp } from "../acciones";
 
 /** Las dos tandas del panel: la de Cauce (Hoy) y la de Modo Cancha (su pestaña). */
 export type Grupo = "cauce" | "canchas";
@@ -128,6 +129,7 @@ export function SeccionTanda({ grupo, lista, titulo }: { grupo: Grupo; lista: Pr
                     </button>
                   </Formulario>
                 </div>
+                <OtrosMedios p={p} abierto={chanceWhatsApp(p.telefono, p.telefono_wa) === "baja"} />
               </li>
             ))}
           </ul>
@@ -135,6 +137,58 @@ export function SeccionTanda({ grupo, lista, titulo }: { grupo: Grupo; lista: Pr
       )}
       {lista.length ? <p className="text-xs text-tenue">Si guardás cambios en un mensaje, el botón «Abrir WhatsApp» usa el texto nuevo después de guardar.</p> : null}
     </Tarjeta>
+  );
+}
+
+/** Para cuando el número no tiene WhatsApp: llamar, buscar su Instagram o copiar el mensaje para otro canal. */
+function OtrosMedios({ p, abierto }: { p: Prospecto; abierto: boolean }) {
+  const digitos = (p.telefono ?? "").replace(/\D/g, "");
+  const tel = digitos ? `tel:${p.telefono!.trim().startsWith("+") ? "+" : ""}${digitos}` : null;
+  const busqueda = `https://www.google.com/search?q=${encodeURIComponent(`${p.nombre} ${p.ciudad ?? ""} instagram`)}`;
+  const guion = guionLlamada(lineaDeRubro(p.rubro), p.nombre);
+  const boton = "inline-flex items-center rounded-md border border-linea px-3 py-1.5 text-sm font-semibold text-tinta hover:bg-hundido";
+  return (
+    <details open={abierto} className="rounded-md bg-hundido/60 px-3 py-2 text-sm">
+      <summary className="cursor-pointer font-semibold text-tenue">
+        Otros medios {abierto ? "· este número parece fijo" : "· si no tiene WhatsApp"}
+      </summary>
+      <div className="mt-3 flex flex-col gap-3">
+        <div className="flex flex-wrap gap-2">
+          {tel ? (
+            <a href={tel} className={boton}>
+              Llamar {p.telefono}
+            </a>
+          ) : null}
+          <a href={busqueda} target="_blank" rel="noopener noreferrer" className={boton}>
+            Buscar su Instagram
+          </a>
+          <Copiar texto={p.mensaje_inicial ?? ""}>Copiar mensaje</Copiar>
+        </div>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-tenue">Si llamás</p>
+          <p className="text-tinta">{guion}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-tenue">Ya lo contacté:</span>
+          {(
+            [
+              ["llamada", "por teléfono"],
+              ["instagram", "por Instagram"],
+              ["email", "por mail"],
+            ] as const
+          ).map(([medio, texto]) => (
+            <form key={medio} action={contactadoPorOtroMedio}>
+              <input type="hidden" name="id" value={p.id} />
+              <input type="hidden" name="medio" value={medio} />
+              <button className="font-semibold text-marca hover:underline">{texto}</button>
+            </form>
+          ))}
+        </div>
+        <p className="text-xs text-tenue">
+          Queda como contactado y sin seguimiento por WhatsApp. Si responde, seguí la charla por ese medio y cambiá el estado en Prospectos.
+        </p>
+      </div>
+    </details>
   );
 }
 

@@ -187,6 +187,26 @@ export async function sinWhatsApp(_: EstadoAccion, datos: FormData): Promise<Est
   return r.ok ? exito("Listo, lo saqué y sumé otro en su lugar.") : exito("Listo, lo saqué de la lista.");
 }
 
+/**
+ * El negocio no tiene WhatsApp y se lo contactó por otro medio (llamada, Instagram, mail): queda como
+ * contactado, con nota, y sin seguimiento por WhatsApp. Las respuestas se anotan a mano en Prospectos.
+ */
+export async function contactadoPorOtroMedio(datos: FormData) {
+  const id = uuid.safeParse(datos.get("id"));
+  const medio = z.enum(["llamada", "instagram", "email"]).safeParse(datos.get("medio"));
+  if (!id.success || !medio.success) return;
+  const nombres = { llamada: "por teléfono", instagram: "por Instagram", email: "por mail" } as const;
+  const { data: p } = await db().from("prospectos").select("notas").eq("id", id.data).single();
+  const nota = `Contactado ${nombres[medio.data]} (${hoyAR()}), no por WhatsApp`;
+  const ahora = new Date().toISOString();
+  await db()
+    .from("prospectos")
+    .update({ estado: "contactado", contactado_el: ahora, seguimiento_el: ahora, notas: p?.notas ? `${p.notas}\n${nota}` : nota })
+    .eq("id", id.data)
+    .in("estado", ["en_tanda", "sin_contactar"]);
+  revalidatePath("/", "layout");
+}
+
 export async function sacarDeTanda(datos: FormData) {
   const id = uuid.safeParse(datos.get("id"));
   if (!id.success) return;
