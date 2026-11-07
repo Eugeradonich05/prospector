@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/datos/supabase";
 import { env } from "@/lib/env";
+import { ventanaAbierta } from "@/lib/dominio/ventana";
+import { enlaceSeguro } from "@/lib/dominio/datos-complejo";
 import { ETIQUETA_ESTADO, type Mensaje, type Prospecto } from "@/lib/dominio/tipos";
 import { AreaTexto, Aviso, Boton, Campo, Encabezado, Etiqueta, Selector, Tarjeta, TituloSeccion, cx } from "@/components/ui";
 import { Formulario, Enviar } from "@/components/formulario";
@@ -9,7 +11,7 @@ import { responderManual, actualizarProspecto, devolverAlBot } from "../../../ac
 
 export const metadata = { title: "Conversación" };
 
-const QUIEN = { entrante: "Negocio", bot: "Bot", humano: "Vos" } as const;
+const QUIEN = { entrante: "Complejo", bot: "Bot", humano: "Vos" } as const;
 
 export default async function Conversacion({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -23,8 +25,7 @@ export default async function Conversacion({ params }: { params: Promise<{ id: s
   const mensajes = (md ?? []) as Mensaje[];
   const botConectado = Boolean(env().WHATSAPP_TOKEN);
   const pausado = !p.bot_activo || (p.humano_hasta !== null && new Date(p.humano_hasta) > new Date());
-  const ultimoEntrante = p.ultimo_entrante_el ? new Date(p.ultimo_entrante_el).getTime() : 0;
-  const ventanaAbierta = Date.now() - ultimoEntrante < 24 * 3_600_000;
+  const puedeResponder = ventanaAbierta(p.ultimo_entrante_el);
   const hora = (iso: string) =>
     new Intl.DateTimeFormat("es-AR", { timeZone: "America/Argentina/Buenos_Aires", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 
@@ -71,12 +72,12 @@ export default async function Conversacion({ params }: { params: Promise<{ id: s
           {!botConectado ? (
             <Aviso>
               Modo manual: respondé desde tu celular. Después anotá acá al costado el estado (Respondió, Interesado, Demo…) y en Notas lo
-              que te contó: cuántos alumnos tiene, cómo cobra hoy y cuándo volver a hablar.
+              que te contó: cuántas canchas tiene, cómo toma hoy las reservas y cuándo volver a hablar.
             </Aviso>
-          ) : ventanaAbierta ? (
+          ) : puedeResponder ? (
             <Formulario accion={responderManual} limpiarAlGuardar>
               <input type="hidden" name="id" value={p.id} />
-              <Campo etiqueta="Responder como Cauce" htmlFor="texto" ayuda="Al enviar, el bot queda en pausa 12 horas en esta conversación. También podés responder desde tu celular.">
+              <Campo etiqueta="Responder como Modo Cancha" htmlFor="texto" ayuda="Al enviar, el bot queda en pausa 12 horas en esta conversación. También podés responder desde tu celular.">
                 <AreaTexto id="texto" name="texto" className="min-h-20" />
               </Campo>
               <Enviar className="self-start">Enviar</Enviar>
@@ -102,7 +103,7 @@ export default async function Conversacion({ params }: { params: Promise<{ id: s
               <p className="text-sm text-tenue">Todavía nada.</p>
             )}
             <p className="text-sm text-tenue">
-              {p.telefono} {p.maps_url ? <a className="text-marca underline" href={p.maps_url} target="_blank" rel="noopener noreferrer">Maps</a> : null}
+              {p.telefono} {enlaceSeguro(p.maps_url) ? <a className="text-marca underline" href={enlaceSeguro(p.maps_url)!} target="_blank" rel="noopener noreferrer">Maps</a> : null}
             </p>
           </Tarjeta>
 

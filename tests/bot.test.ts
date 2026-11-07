@@ -7,17 +7,19 @@ import { elegirTanda, seguimientosPendientes } from "@/lib/dominio/tandas";
 import { esPedidoDeBaja, MENSAJE_BAJA } from "@/lib/dominio/baja";
 import { normalizarDecision, transcripcion, type Cerebro, type Decision } from "@/lib/bot/cerebro";
 import { normalizarTelefonoAR } from "@/lib/dominio/telefono";
+import { ventanaAbierta } from "@/lib/dominio/ventana";
 import type { Prospecto } from "@/lib/dominio/tipos";
 
 const AHORA = new Date("2026-10-15T14:00:00Z");
 
 function prospecto(cambios: Partial<Prospecto> = {}): Prospecto {
   return {
-    id: "p1", nombre: "Josefina Estudio", rubro: "Pilates", ciudad: "Rosario", provincia: "Santa Fe", direccion: null,
+    id: "p1", nombre: "Pádel del Parque", rubro: "Pádel", ciudad: "Rosario", provincia: "Santa Fe", direccion: null,
     telefono: "+54 341 691-0835", telefono_wa: "5493416910835", prioridad: "A", resenas: 254, calificacion: 5, maps_url: null,
     estado: "contactado", tanda_fecha: "2026-10-14", mensaje_inicial: "Hola!", contactado_el: "2026-10-14T13:00:00Z",
     seguimiento_el: null, ultimo_entrante_el: null, bot_activo: true, humano_hasta: null, necesita_humano: false,
-    motivo_humano: null, datos: {}, notas: null, creado: "2026-10-14T00:00:00Z", ...cambios,
+    motivo_humano: null, datos: {}, notas: null, creado: "2026-10-14T00:00:00Z", place_id: null, deportes: ["pádel"],
+    canchas_cantidad: null, instagram: null, web: null, sistema_actual: null, lat: null, lng: null, origen: "seed", ...cambios,
   };
 }
 
@@ -29,7 +31,7 @@ function entorno(p: Prospecto, decision?: Partial<Decision>, opciones: { falla?:
   const cerebro: Cerebro = {
     decidir: vi.fn(async () => {
       if (opciones.falla) throw new Error("timeout");
-      return { mensaje: "¡Hola! Soy el asistente de Eugenio. ¿Cuántos alumnos tienen?", estado: "respondio", derivar: false, motivo: null, datos: {}, ...decision } as Decision;
+      return { mensaje: "¡Hola! Soy el asistente automático de Modo Cancha. ¿Cuántas canchas tienen?", estado: "respondio", derivar: false, motivo: null, datos: {}, ...decision } as Decision;
     }),
   };
   const d: Dependencias = {
@@ -48,7 +50,7 @@ const entrante = (texto: string | null, waId = "wamid.in1", clase = "text"): Eve
 });
 
 describe("conversación del bot", () => {
-  it("responde a un prospecto contactado y lo pasa a 'respondió'", async () => {
+  it("responde a un complejo contactado y lo pasa a 'respondió'", async () => {
     const p = prospecto();
     const { d, enviados, almacen } = entorno(p);
     const r = await procesarEvento(entrante("Hola, sí, contame"), d);
@@ -97,10 +99,10 @@ describe("conversación del bot", () => {
 
   it("deriva cuando el modelo lo pide, guarda los datos y no responde más hasta que intervengas", async () => {
     const p = prospecto();
-    const { d, enviados, avisos } = entorno(p, { estado: "interesado", derivar: true, motivo: "Quiere arrancar la prueba", datos: { alumnos: "120" } });
+    const { d, enviados, avisos } = entorno(p, { estado: "interesado", derivar: true, motivo: "Quiere arrancar la prueba", datos: { canchas: "4 de pádel" } });
     await procesarEvento(entrante("Dale, quiero probarlo"), d);
     expect(p.estado).toBe("interesado");
-    expect(p.datos.alumnos).toBe("120");
+    expect(p.datos.canchas).toBe("4 de pádel");
     expect(p.necesita_humano).toBe(true);
     expect(avisos).toEqual(["Quiere arrancar la prueba"]);
     await procesarEvento(entrante("¿Hola?", "wamid.in2"), d);
@@ -153,9 +155,36 @@ describe("conversación del bot", () => {
   it("al descartarse, el bot cierra y se apaga para ese prospecto", async () => {
     const p = prospecto();
     const { d } = entorno(p, { mensaje: "Gracias igual, éxitos!", estado: "descartado" });
-    await procesarEvento(entrante("Ya usamos otro sistema y andamos bien"), d);
+    await procesarEvento(entrante("Ya usamos ATC y andamos bien"), d);
     expect(p.estado).toBe("descartado");
     expect(p.bot_activo).toBe(false);
+  });
+});
+
+describe("ventana de 24 h", () => {
+  it("solo se puede responder dentro de las 24 h desde el último mensaje del complejo", () => {
+    expect(ventanaAbierta("2026-10-15T13:00:00Z", AHORA)).toBe(true);
+    expect(ventanaAbierta("2026-10-14T14:00:01Z", AHORA)).toBe(true);
+    expect(ventanaAbierta("2026-10-14T14:00:00Z", AHORA)).toBe(false);
+    expect(ventanaAbierta(null, AHORA)).toBe(false);
+    expect(ventanaAbierta("no es fecha", AHORA)).toBe(false);
+  });
+
+  it("el bot nunca inicia: tus mensajes desde la app no disparan respuestas", async () => {
+    const p = prospecto({ estado: "en_tanda", contactado_el: null });
+    const { d, enviados, cerebro } = entorno(p);
+    await procesarEvento({ tipo: "eco", para: "5493416910835", waId: "wamid.eco1", momento: 1, clase: "text", texto: "Hola!" }, d);
+    await procesarEvento({ tipo: "eco", para: "5493416910835", waId: "wamid.eco2", momento: 2, clase: "text", texto: "Hola de nuevo!" }, d);
+    expect(enviados).toHaveLength(0);
+    expect(cerebro.decidir).not.toHaveBeenCalled();
+  });
+
+  it("ignora números que no están en la base aunque escriban a tu número", async () => {
+    const { d, enviados, cerebro } = entorno(prospecto());
+    const r = await procesarEvento({ ...entrante("Hola, ¿tienen cancha a las 21?"), de: "5493364000000" } as EventoWhatsApp, d);
+    expect(r).toMatch(/no es prospecto/);
+    expect(enviados).toHaveLength(0);
+    expect(cerebro.decidir).not.toHaveBeenCalled();
   });
 });
 
@@ -242,15 +271,15 @@ describe("bajas", () => {
   it.each(["No me interesa", "no nos interesa gracias", "No estoy interesada", "Por favor no me escriban más", "Dejá de mandar mensajes", "BAJA", "stop", "No, gracias", "esto es spam"])("detecta: %s", (t) => {
     expect(esPedidoDeBaja(t)).toBe(true);
   });
-  it.each(["Hola, sí me interesa", "¿Cuánto sale?", "No sé cuántos alumnos tenemos", "no tenemos sistema", "Gracias por escribir"])("no confunde: %s", (t) => {
+  it.each(["Hola, sí me interesa", "¿Cuánto sale?", "No sé cuántas canchas tenemos", "no tenemos sistema", "Gracias por escribir"])("no confunde: %s", (t) => {
     expect(esPedidoDeBaja(t)).toBe(false);
   });
 });
 
 describe("salida del modelo", () => {
   it("normaliza y descarta valores inválidos", () => {
-    expect(normalizarDecision({ mensaje: "  Hola ", estado: "cliente", derivar: "si", datos: { alumnos: "80", basura: 3 } })).toEqual({
-      mensaje: "Hola", estado: null, derivar: false, motivo: null, datos: { alumnos: "80" },
+    expect(normalizarDecision({ mensaje: "  Hola ", estado: "cliente", derivar: "si", datos: { canchas: "6", basura: 3 } })).toEqual({
+      mensaje: "Hola", estado: null, derivar: false, motivo: null, datos: { canchas: "6" },
     });
   });
   it("sin mensaje, deriva", () => {
@@ -258,7 +287,7 @@ describe("salida del modelo", () => {
   });
   it("arma la transcripción con roles claros", () => {
     const t = transcripcion({
-      prospecto: { nombre: "Josefina Estudio", rubro: "Pilates", ciudad: "Rosario", datos: { alumnos: "120" } },
+      prospecto: { nombre: "Pádel del Parque", rubro: "Pádel", ciudad: "Rosario", datos: { canchas: "4" } },
       historial: [
         { direccion: "humano", texto: "Hola!", tipo: "text" },
         { direccion: "entrante", texto: null, tipo: "audio" },
@@ -266,9 +295,11 @@ describe("salida del modelo", () => {
       ],
       esPrimeraRespuestaDelBot: true,
     });
-    expect(t).toContain("[Persona de Cauce]: Hola!");
-    expect(t).toContain("[Negocio]: [envió un audio]");
-    expect(t).toContain("alumnos: 120");
+    expect(t).toContain("[Persona de Modo Cancha]: Hola!");
+    expect(t).toContain("[Complejo]: [envió un audio]");
+    expect(t).toContain("canchas: 4");
+    expect(t).toContain("Modo Cancha");
+    expect(t).not.toMatch(/Cauce|Eugenio/);
     expect(t).toContain("ES TU PRIMERA RESPUESTA");
   });
 });

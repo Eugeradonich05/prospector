@@ -1,22 +1,30 @@
-# Prospector · Guía para Claude Code
+# Prospector · Modo Cancha · Guía para Claude Code
 
-Bot de prospección por WhatsApp de un solo dueño (Eugenio) para vender los servicios de Cauce: Cuotas al día, bot de turnos, buscador en documentos y automatización a medida, y además Modo Cancha (reservas de canchas) en su propia pestaña y tanda. Todo en español rioplatense.
+Herramienta de un solo dueño (Eugenio) para venderle Modo Cancha (modocanchas.com, reservas de canchas online) a complejos deportivos de toda Argentina por WhatsApp. Todo en español rioplatense, con voseo. No hay otros productos: nada de Cauce.
 
 ## Reglas que no se rompen
 
-- **El bot nunca inicia conversaciones.** Solo responde dentro de la ventana de 24 h. El primer mensaje y el único seguimiento los manda Eugenio desde su app (tandas asistidas). No agregar envío masivo ni automático de primeros mensajes: viola la política de WhatsApp Business y pone en riesgo el número.
-- El bot solo habla con números que están en `prospectos`. Cualquier otro chat del número se ignora.
+- **El primer mensaje y el único seguimiento (a los 3 días) los manda una persona desde su app de WhatsApp**, con «Abrir WhatsApp». No agregar envío automático ni masivo de primeros mensajes, ni plantillas pagas: viola la política de WhatsApp Business y pone en riesgo el número.
+- El bot solo responde dentro de la ventana de 24 h (`ventanaAbierta()`) y solo a números que están en `prospectos`. Cualquier otro chat se ignora.
 - Los pedidos de baja se detectan con `esPedidoDeBaja()` antes del modelo y marcan `no_contactar` para siempre.
-- Lo que sabe el bot está solo en `src/lib/bot/conocimiento.ts`, separado por servicio. No inventa precios ni funciones; solo Cuotas al día tiene precios.
-- El servicio de cada prospecto sale de su rubro con `lineaDeRubro()` (`src/lib/dominio/lineas.ts`). Los complejos de canchas devuelven `"canchas"`: no entran en la tanda de Hoy (`LINEAS_CAUCE`), sino en la de `/modo-cancha`, que habla como Modo Cancha (`marcaDe()`) y también prueba números que parecen fijos. Si sumás un rubro, agregalo ahí y a `tests/lineas.test.ts`.
 - La salida del modelo pasa siempre por `normalizarDecision()`.
+- Ninguna clave en el código: todo por variables de entorno (`src/lib/env.ts`). `GOOGLE_MAPS_API_KEY` es solo servidor.
+- Solo entran rubros de canchas (`esRubroDeCanchas()` en `src/lib/dominio/lineas.ts`); el resto se rechaza al cargar.
+- Lo que sabe el bot está solo en `src/lib/bot/conocimiento.ts`. No inventa funciones; los precios están en `PRECIOS_PLANES` (revisar antes de publicar).
+- No editar migraciones ya aplicadas: agregar una nueva en `supabase/migrations/`.
 
 ## Estructura
 
-- `src/lib/bot/manejar.ts`: orquestación (testeada en `tests/bot.test.ts` con almacén en memoria y cerebro falso).
-- `src/lib/bot/claude.ts`: llamadas a Claude (respuesta con tool forzada y redacción del primer mensaje).
-- `src/lib/whatsapp/`: lectura del webhook (mensajes y ecos), firma de Meta y envío (Meta o 360dialog).
-- `src/app/(panel)/`: Hoy (tanda de Cauce y seguimientos), Conversaciones, Modo Cancha (su tanda aparte), Prospectos. La tarjeta de tanda está en `(panel)/tanda.tsx`. Acciones en `src/app/acciones.ts` (las de tanda reciben `grupo`).
+- `src/lib/dominio/`: reglas puras y testeadas. `tandas.ts` (elegir tanda por zona, seguimiento, copiar lista), `complejos.ts` (deportes, rubro, prioridad por reseñas, sistema actual, deduplicado), `datos-complejo.ts` (validación de la ficha), `importar.ts` (planillas), `telefono.ts`, `ventana.ts`.
+- `src/lib/google/`: Places API (New). `places.ts` (cliente con `fetch` inyectable) y `complejos-google.ts` (normalización y filtro de «no es complejo»).
+- `src/lib/bot/`: `manejar.ts` (orquestación), `claude.ts` (llamadas), `primer-mensaje.ts` (pedido del primer mensaje según deportes y sistema actual, puro), `cerebro.ts`, `conocimiento.ts`.
+- `src/lib/tanda-servidor.ts`: arma la tanda de hoy (límite, zona, solo ciertos ids) y redacta los mensajes.
+- `src/lib/datos/leer-todo.ts`: Supabase devuelve como mucho 1000 filas: usarlo para leer la base entera.
+- `src/app/(panel)/`: Hoy (`page.tsx` + `tanda.tsx`), Buscar complejos (`buscar/`), Complejos (`complejos/`: lista con filtros, ficha, agregar a mano, importar), Conversaciones, Conectar WhatsApp. Acciones de tanda y conversación en `src/app/acciones.ts`.
+
+## Tests
+
+`tests/` usa vitest. Google se prueba con respuestas de ejemplo en `tests/fixtures/` (nunca llamar a Google en tests). `scripts/test-db.ts` aplica las migraciones y el seed en Postgres embebido.
 
 ## Comandos
 

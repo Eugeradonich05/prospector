@@ -6,9 +6,11 @@ export const dynamic = "force-dynamic";
 export default function LayoutPanel({ children }: { children: React.ReactNode }) {
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-6xl flex-col">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-linea px-4 py-3">
-        <div className="flex items-center gap-4">
-          <span className="font-display text-lg font-extrabold">Prospector</span>
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-acento px-4 py-3">
+        <div className="flex flex-wrap items-center gap-4">
+          <span className="font-display text-lg font-extrabold">
+            Prospector <span className="text-tenue">·</span> <span className="text-marca">Modo Cancha</span>
+          </span>
           <Navegacion />
         </div>
         <form action={salir}>

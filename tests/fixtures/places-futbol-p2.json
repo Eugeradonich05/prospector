@@ -1,0 +1,33 @@
+{
+  "places": [
+    {
+      "id": "ChIJ_ClubSomisa",
+      "displayName": { "text": "Club Atlético Somisa", "languageCode": "es" },
+      "formattedAddress": "Av. Central 100, San Nicolás de Los Arroyos",
+      "internationalPhoneNumber": "+54 336 442-0000",
+      "userRatingCount": 900,
+      "rating": 4.4,
+      "location": { "latitude": -33.3500, "longitude": -60.2000 },
+      "businessStatus": "OPERATIONAL",
+      "types": ["sports_club", "establishment"],
+      "addressComponents": [
+        { "longText": "San Nicolás de Los Arroyos", "types": ["locality"] },
+        { "longText": "Provincia de Buenos Aires", "types": ["administrative_area_level_1"] }
+      ]
+    },
+    {
+      "id": "ChIJ_Galpon",
+      "displayName": { "text": "Canchas El Galpón", "languageCode": "es" },
+      "formattedAddress": "Pellegrini 900, San Nicolás de Los Arroyos",
+      "internationalPhoneNumber": "+54 9 336 400-0000",
+      "userRatingCount": 40,
+      "location": { "latitude": -33.3320, "longitude": -60.2190 },
+      "businessStatus": "CLOSED_PERMANENTLY",
+      "types": ["sports_complex"],
+      "addressComponents": [
+        { "longText": "San Nicolás de Los Arroyos", "types": ["locality"] },
+        { "longText": "Provincia de Buenos Aires", "types": ["administrative_area_level_1"] }
+      ]
+    }
+  ]
+}

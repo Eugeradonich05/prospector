@@ -5,8 +5,8 @@ import "@fontsource-variable/jetbrains-mono";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "Prospector", template: "%s · Prospector" },
-  description: "Tandas de contacto y respuestas automáticas por WhatsApp para los servicios de Cauce.",
+  title: { default: "Prospector · Modo Cancha", template: "%s · Prospector · Modo Cancha" },
+  description: "Tandas de contacto y respuestas automáticas por WhatsApp para venderle Modo Cancha a complejos deportivos.",
   robots: { index: false, follow: false },
 };
 

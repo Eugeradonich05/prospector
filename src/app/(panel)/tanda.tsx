@@ -1,53 +1,67 @@
-import { mensajeSeguimiento } from "@/lib/dominio/tandas";
-import { LINEAS, guionLlamada, lineaDeRubro } from "@/lib/dominio/lineas";
+import { mensajeSeguimiento, textoListaTanda, zonaATexto, type OpcionesZona } from "@/lib/dominio/tandas";
+import { guionLlamada } from "@/lib/dominio/lineas";
+import { enlaceSeguro } from "@/lib/dominio/datos-complejo";
 import { chanceWhatsApp } from "@/lib/dominio/telefono";
 import type { Prospecto } from "@/lib/dominio/tipos";
-import { AreaTexto, Aviso, Etiqueta, Tarjeta, TituloSeccion } from "@/components/ui";
+import { AreaTexto, Aviso, Etiqueta, Selector, Tarjeta, TituloSeccion } from "@/components/ui";
 import { Formulario, Enviar } from "@/components/formulario";
 import { AbrirWhatsApp } from "@/components/abrir-whatsapp";
 import { Copiar } from "@/components/copiar";
 import { armarTanda, contactadoPorOtroMedio, guardarMensajeInicial, marcarEnviado, nuevaTanda, rehacerMensajes, sacarDeTanda, sinWhatsApp } from "../acciones";
 
-/** Las dos tandas del panel: la de Cauce (Hoy) y la de Modo Cancha (su pestaña). */
-export type Grupo = "cauce" | "canchas";
+const EXPLICACION =
+  "Elige complejos sin contactar (primero los que figuran como celular, después prioridad y reseñas, repartidos entre ciudades) y Claude redacta un mensaje distinto para cada uno, presentándose como Modo Cancha. Tarda uno o dos minutos.";
 
-export function grupoDe(rubro: string | null | undefined): Grupo {
-  return lineaDeRubro(rubro) === "canchas" ? "canchas" : "cauce";
+/** Elegir de dónde sale la tanda: toda la base, una provincia o una ciudad (con cuántos quedan por contactar). */
+function SelectorZona({ zonas, id }: { zonas: OpcionesZona; id: string }) {
+  return (
+    <label htmlFor={id} className="flex flex-col gap-1.5 text-sm font-semibold">
+      Zona
+      <Selector id={id} name="zona" defaultValue="todo" className="sm:max-w-sm">
+        <option value="todo">Toda la base</option>
+        {zonas.provincias.length ? (
+          <optgroup label="Provincia">
+            {zonas.provincias.map((z) => (
+              <option key={z.provincia} value={zonaATexto({ tipo: "provincia", provincia: z.provincia })}>
+                {z.provincia} ({z.cantidad})
+              </option>
+            ))}
+          </optgroup>
+        ) : null}
+        {zonas.ciudades.length ? (
+          <optgroup label="Ciudad">
+            {zonas.ciudades.map((z) => (
+              <option key={`${z.provincia}|${z.ciudad}`} value={zonaATexto({ tipo: "ciudad", provincia: z.provincia, ciudad: z.ciudad })}>
+                {z.ciudad}
+                {z.provincia ? `, ${z.provincia}` : ""} ({z.cantidad})
+              </option>
+            ))}
+          </optgroup>
+        ) : null}
+      </Selector>
+    </label>
+  );
 }
 
-const TEXTOS: Record<Grupo, { armar: string; explicacion: string }> = {
-  cauce: {
-    armar: "Armar tanda de hoy",
-    explicacion:
-      "Elige los mejores prospectos sin contactar (primero prioridad A, repartidos entre ciudades y entre rubros) y Claude redacta un mensaje distinto para cada uno, según lo que le sirve a ese rubro. Tarda uno o dos minutos.",
-  },
-  canchas: {
-    armar: "Armar tanda de Modo Cancha",
-    explicacion:
-      "Elige complejos de canchas sin contactar (primero los que figuran como celular y los de más reseñas, repartidos entre ciudades) y Claude redacta un mensaje distinto para cada uno, presentándose como Modo Cancha. Tarda uno o dos minutos.",
-  },
-};
-
-/** Tarjeta con la tanda del día de un grupo: armarla, cambiarla y mandar cada mensaje. */
-export function SeccionTanda({ grupo, lista, titulo }: { grupo: Grupo; lista: Prospecto[]; titulo: string }) {
+/** Tarjeta con la tanda del día: armarla, cambiarla y mandar cada mensaje. */
+export function SeccionTanda({ lista, titulo, zonas }: { lista: Prospecto[]; titulo: string; zonas: OpcionesZona }) {
   const pendientes = lista.filter((p) => p.estado === "en_tanda");
   const enviadosHoy = lista.filter((p) => p.estado !== "en_tanda" && p.estado !== "sin_contactar" && p.estado !== "no_contactar").length;
-  const campoGrupo = <input type="hidden" name="grupo" value={grupo} />;
 
   return (
     <Tarjeta className="flex flex-col gap-4 p-5">
       <TituloSeccion titulo={titulo} detalle={lista.length ? `${enviadosHoy} enviados · ${pendientes.length} por enviar` : "Todavía no armaste la tanda de hoy."} />
       {!lista.length ? (
         <Formulario accion={armarTanda}>
-          {campoGrupo}
-          <p className="text-sm text-tenue">{TEXTOS[grupo].explicacion}</p>
-          <Enviar className="self-start">{TEXTOS[grupo].armar}</Enviar>
+          <SelectorZona zonas={zonas} id="zona-armar" />
+          <p className="text-sm text-tenue">{EXPLICACION}</p>
+          <Enviar className="self-start">Armar tanda de hoy</Enviar>
         </Formulario>
       ) : !pendientes.length ? (
         <>
           <Aviso tono="ok">Tanda de hoy completa. Las respuestas las va contestando el bot.</Aviso>
           <Formulario accion={nuevaTanda}>
-            {campoGrupo}
+            <SelectorZona zonas={zonas} id="zona-otra" />
             <p className="text-sm text-tenue">Si todavía te queda margen en el límite diario, podés sumar otra tanda.</p>
             <Enviar variante="secundario" className="self-start">
               Generar nueva tanda
@@ -56,19 +70,22 @@ export function SeccionTanda({ grupo, lista, titulo }: { grupo: Grupo; lista: Pr
         </>
       ) : (
         <>
-          <div className="flex flex-wrap items-start gap-3">
-            <Formulario accion={nuevaTanda}>
-              {campoGrupo}
-              <Enviar>Generar nueva tanda</Enviar>
+          <div className="flex flex-wrap items-end gap-3">
+            <Formulario accion={nuevaTanda} className="gap-3">
+              <SelectorZona zonas={zonas} id="zona-nueva" />
+              <Enviar className="self-start">Generar nueva tanda</Enviar>
             </Formulario>
             <Formulario accion={rehacerMensajes}>
-              {campoGrupo}
               <Enviar variante="secundario">Rehacer los {pendientes.length} mensajes</Enviar>
             </Formulario>
+            <Copiar texto={textoListaTanda(pendientes)} className="py-2">
+              Copiar lista
+            </Copiar>
           </div>
           <p className="text-sm text-tenue">
-            «Generar nueva tanda» devuelve a la lista los {pendientes.length} que no mandaste y elige otros, con mensajes nuevos. «Rehacer» deja los mismos negocios y solo
-            vuelve a escribir los mensajes. Los dos pisan lo que hayas editado. Lo que ya mandaste hoy sigue contando para el límite diario.
+            «Generar nueva tanda» devuelve a la lista los {pendientes.length} que no mandaste y elige otros, con mensajes nuevos. «Rehacer» deja los mismos complejos y solo
+            vuelve a escribir los mensajes. Los dos pisan lo que hayas editado. Lo que ya mandaste hoy sigue contando para el límite diario. «Copiar lista» copia nombre, teléfono y mensaje de cada uno, por si
+            los mandás desde otro celular.
           </p>
           <ul className="flex flex-col gap-4">
             {pendientes.map((p) => (
@@ -78,15 +95,14 @@ export function SeccionTanda({ grupo, lista, titulo }: { grupo: Grupo; lista: Pr
                     <p className="font-semibold">{p.nombre}</p>
                     <p className="text-sm text-tenue">
                       {p.rubro} · {p.ciudad} · {p.resenas ?? 0} reseñas{" "}
-                      {p.maps_url ? (
-                        <a href={p.maps_url} target="_blank" rel="noopener noreferrer" className="text-marca underline">
+                      {enlaceSeguro(p.maps_url) ? (
+                        <a href={enlaceSeguro(p.maps_url)!} target="_blank" rel="noopener noreferrer" className="text-marca underline">
                           ver en Maps
                         </a>
                       ) : null}
                     </p>
                   </div>
                   <span className="flex flex-wrap gap-1.5">
-                    <Etiqueta tono="neutro">{LINEAS[lineaDeRubro(p.rubro)].etiqueta}</Etiqueta>
                     {chanceWhatsApp(p.telefono, p.telefono_wa) === "alta" ? (
                       <Etiqueta tono="marca">Celular</Etiqueta>
                     ) : (
@@ -145,7 +161,7 @@ function OtrosMedios({ p, abierto }: { p: Prospecto; abierto: boolean }) {
   const digitos = (p.telefono ?? "").replace(/\D/g, "");
   const tel = digitos ? `tel:${p.telefono!.trim().startsWith("+") ? "+" : ""}${digitos}` : null;
   const busqueda = `https://www.google.com/search?q=${encodeURIComponent(`${p.nombre} ${p.ciudad ?? ""} instagram`)}`;
-  const guion = guionLlamada(lineaDeRubro(p.rubro), p.nombre);
+  const guion = guionLlamada(p.nombre);
   const boton = "inline-flex items-center rounded-md border border-linea px-3 py-1.5 text-sm font-semibold text-tinta hover:bg-hundido";
   return (
     <details open={abierto} className="rounded-md bg-hundido/60 px-3 py-2 text-sm">
@@ -185,7 +201,7 @@ function OtrosMedios({ p, abierto }: { p: Prospecto; abierto: boolean }) {
           ))}
         </div>
         <p className="text-xs text-tenue">
-          Queda como contactado y sin seguimiento por WhatsApp. Si responde, seguí la charla por ese medio y cambiá el estado en Prospectos.
+          Queda como contactado y sin seguimiento por WhatsApp. Si responde, seguí la charla por ese medio y cambiá el estado en Complejos.
         </p>
       </div>
     </details>
@@ -193,7 +209,7 @@ function OtrosMedios({ p, abierto }: { p: Prospecto; abierto: boolean }) {
 }
 
 /** Único recordatorio para los contactados que no respondieron. */
-export function SeccionSeguimientos({ seguimientos }: { seguimientos: Prospecto[] }) {
+export function SeccionSeguimientos({ seguimientos, linkPrueba }: { seguimientos: Prospecto[]; linkPrueba: string }) {
   return (
     <Tarjeta className="flex flex-col gap-3 p-5">
       <TituloSeccion titulo="Seguimientos" detalle="Contactados hace 3 días o más que no respondieron. Se manda uno solo." />
@@ -207,7 +223,7 @@ export function SeccionSeguimientos({ seguimientos }: { seguimientos: Prospecto[
                 <span className="font-semibold">{p.nombre}</span> <span className="text-sm text-tenue">· {p.ciudad}</span>
               </span>
               <span className="flex items-center gap-3">
-                <AbrirWhatsApp telefono={p.telefono_wa!} mensaje={mensajeSeguimiento(p.nombre, p.rubro)} />
+                <AbrirWhatsApp telefono={p.telefono_wa!} mensaje={mensajeSeguimiento(p.nombre, linkPrueba)} />
                 <form action={marcarEnviado}>
                   <input type="hidden" name="id" value={p.id} />
                   <input type="hidden" name="tipo" value="seguimiento" />

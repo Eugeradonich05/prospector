@@ -1,48 +1,54 @@
 @import "tailwindcss";
 
 /*
- * Cuotas al día · sistema visual
- * Concepto: el talonario de recibos. Papel frío, tinta verde profunda (al día),
- * coral para lo que se debe. Los montos van en monoespaciada, como en un recibo.
+ * Modo Cancha · sistema visual
+ * Verde oliva de marca sobre crema, con naranja de acento (como la línea de cal sobre el césped).
+ * El naranja de marca (#C4661F) va en bordes, foco y detalles; para texto se usa --acento-tinta, que llega a AA.
  */
 
 :root {
-  --papel: #f2f5f3;
-  --superficie: #ffffff;
-  --hundido: #e8eeeb;
-  --tinta: #10211a;
-  --tenue: #56665e;
-  --linea: #d6dfda;
-  --marca: #0c6a4e;
+  --papel: #f3efe2;        /* crema: fondo */
+  --superficie: #fcfaf4;
+  --hundido: #e9e3d2;
+  --tinta: #1f2416;
+  --tenue: #5b604e;
+  --linea: #dcd5c0;
+  --marca: #47532f;        /* verde oliva */
   --marca-tinta: #ffffff;
-  --marca-suave: #dcf0e6;
-  --debe: #b93a26;
-  --debe-suave: #fbe6e1;
-  --aviso: #9a5b00;
-  --aviso-suave: #fbefd9;
-  --ok: #1b7a46;
-  --ok-suave: #ddf2e4;
-  --foco: #0c6a4e;
+  --marca-suave: #e3e6d3;
+  --acento: #c4661f;       /* naranja */
+  --acento-tinta: #9a4a12;
+  --acento-suave: #f6e3d2;
+  --debe: #a8361f;
+  --debe-suave: #fbeae3;
+  --aviso: #7e4c00;
+  --aviso-suave: #f7ebd3;
+  --ok: #3f6b2a;
+  --ok-suave: #e4ebd8;
+  --foco: #c4661f;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --papel: #0e1613;
-    --superficie: #15201b;
-    --hundido: #111b17;
-    --tinta: #e3ece7;
-    --tenue: #94a69c;
-    --linea: #26352e;
-    --marca: #45c294;
-    --marca-tinta: #07120d;
-    --marca-suave: #173328;
+    --papel: #171a12;
+    --superficie: #20241a;
+    --hundido: #1b1f15;
+    --tinta: #ece8da;
+    --tenue: #a9ac98;
+    --linea: #343a28;
+    --marca: #a9bc7c;
+    --marca-tinta: #171a12;
+    --marca-suave: #2c3420;
+    --acento: #e08a45;
+    --acento-tinta: #f0a465;
+    --acento-suave: #3a2616;
     --debe: #f08a76;
     --debe-suave: #3a1c16;
     --aviso: #e7ad55;
     --aviso-suave: #35270f;
-    --ok: #74cf98;
-    --ok-suave: #14301f;
-    --foco: #45c294;
+    --ok: #9fcf7a;
+    --ok-suave: #22301a;
+    --foco: #e08a45;
     color-scheme: dark;
   }
 }
@@ -57,6 +63,9 @@
   --color-marca: var(--marca);
   --color-marca-tinta: var(--marca-tinta);
   --color-marca-suave: var(--marca-suave);
+  --color-acento: var(--acento);
+  --color-acento-tinta: var(--acento-tinta);
+  --color-acento-suave: var(--acento-suave);
   --color-debe: var(--debe);
   --color-debe-suave: var(--debe-suave);
   --color-aviso: var(--aviso);
@@ -93,14 +102,6 @@ h1, h2, h3 {
 .num {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-}
-
-/* Borde perforado de talonario, usado en el portal del socio y en la landing */
-.perforado {
-  background-image: radial-gradient(circle at 8px 50%, var(--papel) 5px, transparent 5.5px);
-  background-size: 16px 16px;
-  background-repeat: repeat-x;
-  height: 12px;
 }
 
 @media (prefers-reduced-motion: reduce) {

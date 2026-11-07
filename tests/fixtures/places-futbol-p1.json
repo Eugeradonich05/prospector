@@ -1,0 +1,56 @@
+{
+  "places": [
+    {
+      "id": "ChIJyygdw75nt5URqC1v3Nz8SO8",
+      "displayName": { "text": "Futbol +", "languageCode": "es" },
+      "formattedAddress": "Av. Pres. Juan Domingo Perón 1080, B2900 San Nicolás de Los Arroyos, Provincia de Buenos Aires",
+      "nationalPhoneNumber": "0336 466-7711",
+      "internationalPhoneNumber": "+54 336 466-7711",
+      "rating": 4.5,
+      "userRatingCount": 261,
+      "location": { "latitude": -33.3401, "longitude": -60.2201 },
+      "googleMapsUri": "https://maps.google.com/?cid=1",
+      "businessStatus": "OPERATIONAL",
+      "types": ["sports_complex", "point_of_interest", "establishment"],
+      "addressComponents": [
+        { "longText": "San Nicolás de Los Arroyos", "shortText": "San Nicolás de Los Arroyos", "types": ["locality", "political"] },
+        { "longText": "Provincia de Buenos Aires", "shortText": "Provincia de Buenos Aires", "types": ["administrative_area_level_1", "political"] },
+        { "longText": "Argentina", "shortText": "AR", "types": ["country", "political"] }
+      ]
+    },
+    {
+      "id": "ChIJ_LaRedonda",
+      "displayName": { "text": "Complejo La Redonda F5", "languageCode": "es" },
+      "formattedAddress": "Belgrano 450, B2900 San Nicolás de Los Arroyos, Provincia de Buenos Aires",
+      "nationalPhoneNumber": "0336 15-412-3456",
+      "internationalPhoneNumber": "+54 9 336 412-3456",
+      "rating": 4.63,
+      "userRatingCount": 120,
+      "location": { "latitude": -33.3300, "longitude": -60.2150 },
+      "googleMapsUri": "https://maps.google.com/?cid=2",
+      "websiteUri": "https://laredonda.com.ar/",
+      "businessStatus": "OPERATIONAL",
+      "types": ["sports_complex", "establishment"],
+      "addressComponents": [
+        { "longText": "San Nicolás de Los Arroyos", "types": ["locality", "political"] },
+        { "longText": "Provincia de Buenos Aires", "types": ["administrative_area_level_1", "political"] }
+      ]
+    },
+    {
+      "id": "ChIJ_SportShop",
+      "displayName": { "text": "Deportes Ramallo Sport Shop", "languageCode": "es" },
+      "formattedAddress": "Mitre 200, Ramallo, Provincia de Buenos Aires",
+      "internationalPhoneNumber": "+54 9 3407 40-1111",
+      "rating": 4.1,
+      "userRatingCount": 30,
+      "location": { "latitude": -33.4850, "longitude": -60.0080 },
+      "businessStatus": "OPERATIONAL",
+      "types": ["sporting_goods_store", "store"],
+      "addressComponents": [
+        { "longText": "Ramallo", "types": ["locality"] },
+        { "longText": "Provincia de Buenos Aires", "types": ["administrative_area_level_1"] }
+      ]
+    }
+  ],
+  "nextPageToken": "pagina-2"
+}

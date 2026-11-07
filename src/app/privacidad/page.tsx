@@ -7,29 +7,29 @@ export default function Privacidad() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 py-10 text-sm leading-relaxed">
       <div>
-        <p className="font-semibold uppercase tracking-wide text-tenue">Cauce</p>
+        <p className="font-semibold uppercase tracking-wide text-acento-tinta">Modo Cancha</p>
         <h1 className="text-3xl font-extrabold">Política de privacidad</h1>
-        <p className="text-tenue">Última actualización: 19 de octubre de 2026</p>
+        <p className="text-tenue">Última actualización: 7 de noviembre de 2026</p>
       </div>
 
       <p>
-        Esta política explica cómo Eugenio Radonich (Rosario, Santa Fe, Argentina), responsable de Cauce (que incluye Cuotas al día), trata los datos de las
-        conversaciones de WhatsApp con negocios que pueden estar interesados en sus servicios de automatización.
+        Esta política explica cómo Eugenio Radonich (Rosario, Santa Fe, Argentina), responsable de Modo Cancha (modocanchas.com, reservas de canchas online),
+        trata los datos de las conversaciones de WhatsApp con complejos deportivos que pueden estar interesados en Modo Cancha.
       </p>
 
       <section className="flex flex-col gap-2">
         <h2 className="text-lg font-bold">Qué datos usamos</h2>
         <ul className="list-disc space-y-1 pl-5">
-          <li>Datos públicos del negocio: nombre, rubro, dirección, ciudad y teléfono, tal como figuran en Google Maps.</li>
-          <li>Los mensajes que el negocio nos envía por WhatsApp y nuestras respuestas.</li>
-          <li>Lo que el negocio nos cuenta en la conversación, por ejemplo cómo cobra las cuotas o cómo maneja los turnos hoy.</li>
+          <li>Datos públicos del complejo: nombre, deportes, dirección, ciudad, teléfono, web e Instagram, tal como figuran en Google Maps o en sus redes.</li>
+          <li>Los mensajes que el complejo nos envía por WhatsApp y nuestras respuestas.</li>
+          <li>Lo que el complejo nos cuenta en la conversación, por ejemplo cuántas canchas tiene o cómo toma hoy las reservas.</li>
         </ul>
       </section>
 
       <section className="flex flex-col gap-2">
         <h2 className="text-lg font-bold">Para qué</h2>
         <p>
-          Solo para responder consultas sobre los servicios de Cauce y, si hay interés, coordinar una prueba, una charla o una demostración. No vendemos ni cedemos
+          Solo para responder consultas sobre Modo Cancha y, si hay interés, coordinar una prueba, una charla o una demostración. No vendemos ni cedemos
           los datos a terceros y no los usamos para publicidad.
         </p>
       </section>
@@ -39,6 +39,7 @@ export default function Privacidad() {
         <ul className="list-disc space-y-1 pl-5">
           <li>Meta (WhatsApp Business Platform), para enviar y recibir los mensajes.</li>
           <li>Anthropic (Claude), para redactar respuestas automáticas a partir de la conversación.</li>
+          <li>Google (Google Maps Platform), de donde salen los datos públicos de los complejos.</li>
           <li>Supabase y Vercel, donde se guardan los datos y funciona el sistema.</li>
         </ul>
       </section>

@@ -1,5 +1,4 @@
 import type { EstadoProspecto, Mensaje, Prospecto } from "@/lib/dominio/tipos";
-import { LINEAS, lineaDeRubro } from "@/lib/dominio/lineas";
 
 /** Lo que decide el bot ante un mensaje entrante. */
 export type Decision = {
@@ -20,7 +19,7 @@ export interface Cerebro {
   decidir(ctx: ContextoConversacion): Promise<Decision>;
 }
 
-const ROTULO = { entrante: "Negocio", bot: "Asistente", humano: "Persona de Cauce" } as const;
+const ROTULO = { entrante: "Complejo", bot: "Asistente", humano: "Persona de Modo Cancha" } as const;
 
 /** Arma la transcripción que lee el modelo. Se pasa como texto para no depender del orden de roles. */
 export function transcripcion(ctx: ContextoConversacion): string {
@@ -32,15 +31,15 @@ export function transcripcion(ctx: ContextoConversacion): string {
     .map(([k, v]) => `${k}: ${String(v)}`)
     .join("; ");
   return [
-    `NEGOCIO: ${ctx.prospecto.nombre} (${ctx.prospecto.rubro ?? "rubro desconocido"}, ${ctx.prospecto.ciudad ?? "ciudad desconocida"})`,
-    `LO QUE LE OFRECIÓ EUGENIO EN EL PRIMER MENSAJE: ${LINEAS[lineaDeRubro(ctx.prospecto.rubro)].etiqueta}`,
+    `COMPLEJO: ${ctx.prospecto.nombre} (${ctx.prospecto.rubro ?? "complejo de canchas"}, ${ctx.prospecto.ciudad ?? "ciudad desconocida"})`,
+    "LO QUE LE OFRECIMOS EN EL PRIMER MENSAJE: Modo Cancha (reservas de canchas online)",
     datos ? `LO QUE YA SABEMOS: ${datos}` : "LO QUE YA SABEMOS: nada todavía",
     ctx.esPrimeraRespuestaDelBot ? "ES TU PRIMERA RESPUESTA en esta conversación." : "Ya te presentaste antes; no lo repitas.",
     "",
     "CONVERSACIÓN (la más vieja primero):",
     ...lineas,
     "",
-    "Respondé al último mensaje del negocio usando la herramienta responder.",
+    "Respondé al último mensaje del complejo usando la herramienta responder.",
   ].join("\n");
 }
 
@@ -51,20 +50,19 @@ export const ESQUEMA_RESPUESTA = {
     estado: {
       type: "string",
       enum: ["respondio", "interesado", "demo", "descartado", "no_contactar"],
-      description: "Estado del prospecto después de este intercambio.",
+      description: "Estado del complejo después de este intercambio.",
     },
-    derivar: { type: "boolean", description: "true si Eugenio tiene que seguir la conversación." },
-    motivo: { type: "string", description: "Si derivás, por qué (una frase para Eugenio)." },
+    derivar: { type: "boolean", description: "true si una persona tiene que seguir la conversación." },
+    motivo: { type: "string", description: "Si derivás, por qué (una frase para quien sigue la charla)." },
     datos: {
       type: "object",
-      description: "Datos nuevos que aprendiste del negocio. Solo lo que dijeron, sin suponer.",
+      description: "Datos nuevos que aprendiste del complejo. Solo lo que dijeron, sin suponer.",
       properties: {
-        tamanio: { type: "string", description: "Alumnos, clientes, pacientes, expedientes o propiedades que manejan, si lo dijeron." },
-        tarea_repetitiva: { type: "string", description: "La tarea que les saca tiempo, en sus palabras." },
-        como_lo_hacen_hoy: { type: "string", description: "Cómo la resuelven hoy (a mano, planilla, cuaderno, otro sistema)." },
-        sistema_actual: { type: "string" },
-        medios_de_pago: { type: "string" },
-        atrasos: { type: "string", description: "Cuotas atrasadas o turnos perdidos, si lo mencionaron." },
+        canchas: { type: "string", description: "Cuántas canchas tienen y de qué deporte, si lo dijeron." },
+        como_reservan_hoy: { type: "string", description: "Cómo toman hoy las reservas (WhatsApp, teléfono, cuaderno, otra app)." },
+        sistema_actual: { type: "string", description: "Nombre del sistema o app de reservas que usan, si usan uno." },
+        senia: { type: "string", description: "Si cobran seña, cuánto y cómo." },
+        ausencias: { type: "string", description: "Si les pasa que reservan y no vienen, en sus palabras." },
         contacto: { type: "string", description: "Nombre de la persona que responde, si lo dijo." },
       },
     },

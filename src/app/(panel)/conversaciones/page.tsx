@@ -17,7 +17,7 @@ export default async function Conversaciones({ searchParams }: { searchParams: P
 
   return (
     <>
-      <Encabezado titulo="Conversaciones" detalle="Negocios que respondieron, la más reciente primero." />
+      <Encabezado titulo="Conversaciones" detalle="Complejos que respondieron, la más reciente primero." />
       <nav className="flex gap-1" aria-label="Filtrar">
         {[
           ["activas", "Activas"],
@@ -35,7 +35,7 @@ export default async function Conversaciones({ searchParams }: { searchParams: P
         ))}
       </nav>
       {!lista.length ? (
-        <Vacio titulo="Nada por acá todavía.">Cuando un negocio conteste, aparece en esta lista.</Vacio>
+        <Vacio titulo="Nada por acá todavía.">Cuando un complejo conteste, aparece en esta lista.</Vacio>
       ) : (
         <Tarjeta>
           <ul className="flex flex-col divide-y divide-linea">

@@ -1,4 +1,5 @@
 /** Tipos del dominio. Escritos a mano a partir de supabase/migrations. Usar `type`, no `interface`. */
+import type { Origen, SistemaActual } from "./complejos";
 
 export type EstadoProspecto =
   | "sin_contactar"
@@ -36,6 +37,27 @@ export type Prospecto = {
   motivo_humano: string | null;
   datos: Record<string, unknown>;
   notas: string | null;
+  creado: string;
+  place_id: string | null;
+  deportes: string[];
+  canchas_cantidad: number | null;
+  instagram: string | null;
+  web: string | null;
+  sistema_actual: SistemaActual | null;
+  lat: number | null;
+  lng: number | null;
+  origen: Origen;
+};
+
+export type Busqueda = {
+  id: string;
+  zona: string;
+  radio_km: number;
+  deportes: string[];
+  encontrados: number;
+  nuevos: number;
+  llamadas: number;
+  resultados: unknown;
   creado: string;
 };
 
@@ -77,6 +99,12 @@ export type Database = {
         Row: Prospecto;
         Insert: Opcional<Prospecto, Exclude<keyof Prospecto, "nombre">>;
         Update: Partial<Prospecto>;
+        Relationships: [];
+      };
+      busquedas: {
+        Row: Busqueda;
+        Insert: Opcional<Busqueda, "id" | "creado" | "deportes" | "encontrados" | "nuevos" | "llamadas" | "resultados">;
+        Update: Partial<Busqueda>;
         Relationships: [];
       };
       mensajes: {

@@ -1,0 +1,61 @@
+{
+  "places": [
+    {
+      "id": "ChIJ_LaRedonda",
+      "displayName": { "text": "Complejo La Redonda F5", "languageCode": "es" },
+      "formattedAddress": "Belgrano 450, B2900 San Nicolás de Los Arroyos, Provincia de Buenos Aires",
+      "internationalPhoneNumber": "+54 9 336 412-3456",
+      "rating": 4.63,
+      "userRatingCount": 120,
+      "location": { "latitude": -33.3300, "longitude": -60.2150 },
+      "businessStatus": "OPERATIONAL",
+      "types": ["sports_complex"],
+      "addressComponents": [
+        { "longText": "San Nicolás de Los Arroyos", "types": ["locality"] },
+        { "longText": "Provincia de Buenos Aires", "types": ["administrative_area_level_1"] }
+      ]
+    },
+    {
+      "id": "ChIJ_ElRemate",
+      "displayName": { "text": "El Remate", "languageCode": "es" },
+      "formattedAddress": "Ruta 9 km 230, Ramallo, Provincia de Buenos Aires",
+      "internationalPhoneNumber": "+54 3407 44-5566",
+      "rating": 4.8,
+      "userRatingCount": 22,
+      "location": { "latitude": -33.4800, "longitude": -60.0100 },
+      "businessStatus": "OPERATIONAL",
+      "types": ["sports_complex"],
+      "addressComponents": [
+        { "longText": "Ramallo", "types": ["locality"] },
+        { "longText": "Provincia de Buenos Aires", "types": ["administrative_area_level_1"] }
+      ]
+    },
+    {
+      "id": "ChIJ_PadelRosario",
+      "displayName": { "text": "Pádel Rosario Centro", "languageCode": "es" },
+      "formattedAddress": "Córdoba 1500, Rosario, Santa Fe",
+      "internationalPhoneNumber": "+54 9 341 555-1234",
+      "userRatingCount": 300,
+      "location": { "latitude": -32.9468, "longitude": -60.6393 },
+      "businessStatus": "OPERATIONAL",
+      "types": ["sports_complex"],
+      "addressComponents": [
+        { "longText": "Rosario", "types": ["locality"] },
+        { "longText": "Santa Fe Province", "types": ["administrative_area_level_1"] }
+      ]
+    },
+    {
+      "id": "ChIJ_Escuelita",
+      "displayName": { "text": "Escuelita de Fútbol Los Pibes", "languageCode": "es" },
+      "formattedAddress": "Savio 300, San Nicolás de Los Arroyos",
+      "userRatingCount": 8,
+      "location": { "latitude": -33.3360, "longitude": -60.2120 },
+      "businessStatus": "OPERATIONAL",
+      "types": ["sports_activity_location"],
+      "addressComponents": [
+        { "longText": "San Nicolás de Los Arroyos", "types": ["locality"] },
+        { "longText": "Provincia de Buenos Aires", "types": ["administrative_area_level_1"] }
+      ]
+    }
+  ]
+}

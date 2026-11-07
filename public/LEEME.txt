@@ -1,0 +1,1 @@
+Lugar para el logo de Modo Cancha: guardalo como public/logo.png (cuadrado, 256 px o más).

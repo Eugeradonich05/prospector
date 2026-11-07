@@ -1,5 +1,6 @@
 "use server";
 
+import { exigirSesion } from "@/lib/sesion-servidor";
 import { z } from "zod";
 import { env } from "@/lib/env";
 
@@ -26,6 +27,7 @@ async function graph<T>(ruta: string, token: string, init?: RequestInit): Promis
 }
 
 export async function completarConexion(entrada: { code: string; wabaId: string; phoneNumberId: string | null }): Promise<ResultadoConexion> {
+  await exigirSesion();
   const e = env();
   const datos = z.object({ code: z.string().min(10), wabaId: z.string().regex(/^\d+$/), phoneNumberId: z.string().regex(/^\d+$/).nullable() }).safeParse(entrada);
   if (!datos.success) return { ok: false, error: "Meta no devolvió los datos esperados. Probá de nuevo." };

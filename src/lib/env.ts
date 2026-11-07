@@ -1,6 +1,9 @@
 import "server-only";
 import { z } from "zod";
 
+/** Una variable vacía (por ejemplo `GOOGLE_MAPS_API_KEY=`) cuenta como no cargada. */
+const vacioComoNada = (v: unknown) => (typeof v === "string" && v.trim() === "" ? undefined : v);
+
 const esquema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().url(),
   SUPABASE_URL: z.string().url(),
@@ -28,15 +31,15 @@ const esquema = z.object({
   META_CONFIG_ID: z.string().optional(), // ID de la configuración de Embedded Signup (Facebook Login for Business)
 
   // Cómo se comporta el bot
-  TANDA_LIMITE: z.coerce.number().int().min(1).max(40).default(15),
-  // Tanda aparte de Modo Cancha (complejos de canchas). Sale del mismo número: sumá los dos límites al cuidar el número.
-  TANDA_LIMITE_CANCHAS: z.coerce.number().int().min(1).max(40).default(10),
+  TANDA_LIMITE: z.coerce.number().int().min(1).max(40).default(10), // primeros contactos por día
   TANDA_MAX_POR_CIUDAD: z.coerce.number().int().min(1).max(40).default(6),
-  // Tope por servicio (Cuotas al día, turnos, documentos, a medida) para que cada tanda mezcle rubros
-  TANDA_MAX_POR_LINEA: z.coerce.number().int().min(1).max(40).default(4),
   BOT_MAX_RESPUESTAS: z.coerce.number().int().min(1).max(30).default(10),
-  LINK_PRUEBA: z.string().url().optional(), // link de registro de Cuotas al día, cuando esté publicado
-  LINK_SITIO: z.string().url().optional(), // web de Cauce, para quien pida ver más
+  LINK_PRUEBA_GRATIS: z.preprocess(vacioComoNada, z.string().url().default("https://www.modocanchas.com/prueba-gratis")),
+  LINK_SITIO: z.preprocess(vacioComoNada, z.string().url().default("https://www.modocanchas.com")),
+
+  // Google Places API (New), solo servidor: para «Buscar complejos»
+  // Si es inválida cuenta como no cargada: así una clave mal pegada no tira abajo el bot (Buscar complejos avisa que falta).
+  GOOGLE_MAPS_API_KEY: z.preprocess(vacioComoNada, z.string().min(20).optional()).catch(undefined),
 
   // Aviso por email cuando una conversación necesita que intervengas (opcional, con Resend)
   RESEND_API_KEY: z.string().optional(),

@@ -17,8 +17,8 @@ export type Dependencias = {
   horasPausaHumano?: number;
 };
 
-export const MENSAJE_NO_TEXTO = "¡Gracias! Por acá leo solo mensajes de texto. Se lo paso a una persona de Cauce y te responde en breve.";
-export const MENSAJE_LIMITE = "Te paso con una persona de Cauce así lo ven directamente. Te escribe en breve.";
+export const MENSAJE_NO_TEXTO = "¡Gracias! Por acá leo solo mensajes de texto. Se lo paso a una persona de Modo Cancha y te responde en breve.";
+export const MENSAJE_LIMITE = "Te paso con una persona de Modo Cancha así lo ven directamente. Te escribe en breve.";
 
 /** Procesa un evento del webhook. Devuelve una descripción corta de lo que hizo (para el registro). */
 export async function procesarEvento(ev: EventoWhatsApp, d: Dependencias): Promise<string> {

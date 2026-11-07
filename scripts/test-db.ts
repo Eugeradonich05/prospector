@@ -1,4 +1,4 @@
-/** Aplica la migración y el seed en un Postgres embebido y revisa lo básico. Uso: npm run test:db */
+/** Aplica las migraciones y el seed en un Postgres embebido y revisa lo básico. Uso: npm run test:db */
 import { PGlite } from "@electric-sql/pglite";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -7,12 +7,6 @@ const db = new PGlite();
 await db.exec(`create role anon nologin; create role authenticated nologin;`);
 const raiz = join(import.meta.dirname, "..", "supabase");
 for (const f of readdirSync(join(raiz, "migrations")).sort()) await db.exec(readFileSync(join(raiz, "migrations", f), "utf8"));
-await db.exec(readFileSync(join(raiz, "seed.sql"), "utf8"));
-await db.exec(readFileSync(join(raiz, "seed.sql"), "utf8")); // segunda vez: no duplica
-const enSeed = Number((await db.query<{ n: number }>("select count(*) n from prospectos")).rows[0]!.n);
-await db.exec(readFileSync(join(raiz, "seed-cauce.sql"), "utf8"));
-await db.exec(readFileSync(join(raiz, "seed-cauce.sql"), "utf8")); // segunda vez: no duplica
-const conCauce = Number((await db.query<{ n: number }>("select count(*) n from prospectos")).rows[0]!.n);
 await db.exec(readFileSync(join(raiz, "seed-canchas.sql"), "utf8"));
 await db.exec(readFileSync(join(raiz, "seed-canchas.sql"), "utf8")); // segunda vez: no duplica
 
@@ -22,11 +16,19 @@ const uno = async (sql: string) => (await db.query<Record<string, unknown>>(sql)
 
 const total = Number((await uno("select count(*) n from prospectos")).n);
 const conWa = Number((await uno("select count(telefono_wa) n from prospectos")).n);
-ok(enSeed === 145, `seed.sql cargó ${enSeed} prospectos de Cuotas al día y no duplica al correrlo dos veces`);
-ok(conCauce === 145 + 524, `seed-cauce.sql sumó ${conCauce - enSeed} prospectos de otros rubros sin duplicar`);
-const canchas = Number((await uno("select count(*) n from prospectos where rubro ~* 'cancha|p[aá]del|f[uú]tbol|complejo deportivo'")).n);
-ok(canchas === 455 && total === conCauce + 455, `seed-canchas.sql sumó ${total - conCauce} complejos para Modo Cancha sin duplicar`);
+ok(total === 455, `seed-canchas.sql cargó ${total} complejos y no duplica al correrlo dos veces`);
+const canchas = Number((await uno("select count(*) n from prospectos where rubro ~* 'cancha|p[aá]del|f[uú]tbol|tenis|complejo deportivo'")).n);
+ok(canchas === total, "todos los rubros son de canchas");
 ok(conWa > 0 && conWa <= total, `${conWa} con WhatsApp válido`);
+const conPlace = Number((await uno("select count(distinct place_id) n from prospectos where origen = 'seed'")).n);
+ok(conPlace === total, `los ${conPlace} del seed tienen place_id (de Google Maps) y origen seed`);
+ok(Number((await uno("select count(*) n from prospectos where 'pádel' = any(deportes)")).n) > 100, "los deportes se completaron desde el nombre y el rubro");
+try { await db.query("update prospectos set sistema_actual = 'excel' where id = (select id from prospectos limit 1)"); ok(false, "sistema_actual"); }
+catch { ok(true, "sistema_actual solo acepta ninguno, whatsapp_manual, atc, clubo u otro"); }
+try { await db.query("insert into prospectos (nombre, place_id) select 'Copia', place_id from prospectos limit 1"); ok(false, "place_id único"); }
+catch { ok(true, "no se puede cargar dos veces el mismo place_id"); }
+await db.query("insert into busquedas (zona, radio_km, deportes, encontrados, nuevos, llamadas) values ('San Nicolás', 15, '{fútbol,pádel}', 40, 12, 7)");
+ok(Number((await uno("select count(*) n from busquedas")).n) === 1, "guarda las búsquedas");
 ok(Number((await uno("select count(*) n from prospectos where estado <> 'sin_contactar'")).n) === 0, "todos arrancan sin contactar");
 const p = (await uno("select id from prospectos where telefono_wa is not null limit 1")).id;
 await db.query("insert into mensajes (prospecto_id, direccion, texto, wa_id) values ($1, 'entrante', 'hola', 'wamid.1')", [p]);
