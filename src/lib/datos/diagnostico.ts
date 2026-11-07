@@ -22,6 +22,9 @@ function explicar(mensaje: string, migraciones: string): string {
   if (m.includes("api key") || m.includes("jwt") || m.includes("unauthorized") || m.includes("invalid")) {
     return `Supabase rechazó la clave (${mensaje}). Revisá que SUPABASE_SECRET_KEY sea la secret key (sb_secret_…) del mismo proyecto que SUPABASE_URL, y hacé Redeploy.`;
   }
+  if (m.includes("permission denied")) {
+    return `La clave secreta no tiene permiso sobre las tablas (${mensaje}). Corré supabase/migrations/20261107000002_permisos.sql en el SQL Editor de Supabase y recargá.`;
+  }
   if (m.includes("does not exist") || m.includes("could not find") || m.includes("schema cache")) {
     return `A la base le faltan tablas o columnas (${mensaje}). Corré en el SQL Editor de Supabase, en orden: ${migraciones}. Después, supabase/seed-canchas.sql.`;
   }

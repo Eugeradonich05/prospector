@@ -52,9 +52,10 @@ Creá un proyecto nuevo (el plan gratis alcanza) y ejecutá en el SQL Editor, **
 
 1. `supabase/migrations/20261014000001_prospector.sql` (tablas base).
 2. `supabase/migrations/20261107000001_modo_cancha.sql` (deportes, sistema actual, Instagram, place_id de Google, búsquedas).
-3. `supabase/seed-canchas.sql`: 455 complejos de fútbol, pádel y deportivos de 21 provincias, con su `place_id` de Google Maps. Se puede correr más de una vez: no duplica.
+3. `supabase/migrations/20261107000002_permisos.sql` (permisos para la clave secreta; en algunos proyectos nuevos hace falta).
+4. `supabase/seed-canchas.sql`: 455 complejos de fútbol, pádel y deportivos de 21 provincias, con su `place_id` de Google Maps. Se puede correr más de una vez: no duplica.
 
-El paso 3 también se puede hacer desde el panel: con la base vacía, **Hoy** muestra el botón «Cargar los complejos».
+El paso 4 también se puede hacer desde el panel: con la base vacía, **Hoy** muestra el botón «Cargar los complejos».
 
 ### 2. Google Maps (para «Buscar complejos»)
 

@@ -4,7 +4,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const db = new PGlite();
-await db.exec(`create role anon nologin; create role authenticated nologin;`);
+await db.exec(`create role anon nologin; create role authenticated nologin; create role service_role nologin;`);
 const raiz = join(import.meta.dirname, "..", "supabase");
 for (const f of readdirSync(join(raiz, "migrations")).sort()) await db.exec(readFileSync(join(raiz, "migrations", f), "utf8"));
 await db.exec(readFileSync(join(raiz, "seed-canchas.sql"), "utf8"));
