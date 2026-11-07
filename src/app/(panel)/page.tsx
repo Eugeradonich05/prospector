@@ -4,6 +4,7 @@ import { env } from "@/lib/env";
 import { hoyAR } from "@/lib/dominio/fechas";
 import { opcionesDeZona, seguimientosPendientes } from "@/lib/dominio/tandas";
 import { leerTodo } from "@/lib/datos/leer-todo";
+import { problemaDeBase } from "@/lib/datos/diagnostico";
 import type { EstadoProspecto, Prospecto } from "@/lib/dominio/tipos";
 import { Aviso, Encabezado, Tarjeta, TituloSeccion, Vacio } from "@/components/ui";
 import { Formulario, Enviar } from "@/components/formulario";
@@ -27,6 +28,15 @@ async function contar(filtrar: (q: ReturnType<typeof base>) => ReturnType<typeof
 const base = () => db().from("prospectos").select("id", { count: "exact", head: true });
 
 export default async function Hoy() {
+  const problema = await problemaDeBase();
+  if (problema) {
+    return (
+      <>
+        <Encabezado titulo="Hoy" detalle="La base todavía no está lista" />
+        <Aviso tono="debe">{problema}</Aviso>
+      </>
+    );
+  }
   const hoy = hoyAR();
   const inicioDia = new Date(`${hoy}T00:00:00-03:00`).toISOString();
   const linkPrueba = env().LINK_PRUEBA_GRATIS;
