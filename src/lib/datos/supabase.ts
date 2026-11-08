@@ -4,10 +4,18 @@ import { env } from "@/lib/env";
 import type { Almacen } from "./almacen";
 import type { Database, Mensaje, Prospecto } from "@/lib/dominio/tipos";
 
+/**
+ * Supabase espera solo la base («https://xxx.supabase.co»). Si se pegó con /rest/v1 o con barra al final,
+ * supabase-js arma rutas como /rest/v1/rest/v1/… y responde PGRST125.
+ */
+export function urlBaseSupabase(url: string): string {
+  return url.trim().replace(/\/+$/, "").replace(/\/(rest|auth|storage)\/v1$/i, "").replace(/\/+$/, "");
+}
+
 /** Cliente con la clave secreta. Esta app es de un solo dueño y corre solo en el servidor. */
 let cliente: ReturnType<typeof createClient<Database>> | null = null;
 export function db() {
-  cliente ??= createClient<Database>(env().SUPABASE_URL, env().SUPABASE_SECRET_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+  cliente ??= createClient<Database>(urlBaseSupabase(env().SUPABASE_URL), env().SUPABASE_SECRET_KEY.trim(), { auth: { persistSession: false, autoRefreshToken: false } });
   return cliente;
 }
 
