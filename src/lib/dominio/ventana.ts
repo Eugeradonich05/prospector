@@ -7,3 +7,10 @@ export function ventanaAbierta(ultimoEntrante: string | null | undefined, ahora:
   if (Number.isNaN(desde)) return false;
   return ahora.getTime() - desde < VENTANA_HORAS * 3_600_000;
 }
+
+/** Horas enteras que quedan para responder por la API (redondeando para arriba), o null si la ventana está cerrada. */
+export function horasRestantesVentana(ultimoEntrante: string | null | undefined, ahora: Date = new Date()): number | null {
+  if (!ventanaAbierta(ultimoEntrante, ahora)) return null;
+  const transcurrido = ahora.getTime() - new Date(ultimoEntrante!).getTime();
+  return Math.ceil((VENTANA_HORAS * 3_600_000 - transcurrido) / 3_600_000);
+}

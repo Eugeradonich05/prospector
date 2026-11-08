@@ -1,53 +1,56 @@
 import Link from "next/link";
 import { db } from "@/lib/datos/supabase";
 import { leerTodo } from "@/lib/datos/leer-todo";
-import { DEPORTES, ETIQUETA_SISTEMA, SISTEMAS, type Deporte, type SistemaActual } from "@/lib/dominio/complejos";
-import { ETIQUETA_ESTADO, type EstadoProspecto, type Prospecto } from "@/lib/dominio/tipos";
-import { BotonLink, Encabezado, Entrada, Selector, Tabla, Tarjeta, Vacio } from "@/components/ui";
+import { DEPORTES, ETIQUETA_SISTEMA, SISTEMAS, type SistemaActual } from "@/lib/dominio/complejos";
+import { ORDENES, contarPorEstado, filtrarComplejos, ordenarComplejos, paginar, type FilaComplejo, type Orden } from "@/lib/dominio/lista-complejos";
+import { ETIQUETA_ESTADO, type EstadoProspecto } from "@/lib/dominio/tipos";
+import { BotonLink, Encabezado, Entrada, Selector, Tabla, Tarjeta, Vacio, cx } from "@/components/ui";
+import { EtiquetaEstado } from "@/components/visual";
+import { Tablero } from "./tablero";
 
 export const metadata = { title: "Complejos" };
 
-const MOSTRAR = 500;
+const POR_PAGINA = 50;
+const COLUMNAS = "id, nombre, rubro, ciudad, provincia, prioridad, estado, resenas, deportes, sistema_actual, telefono_wa, ultimo_entrante_el, contactado_el";
 
-type Filtros = { provincia?: string; ciudad?: string; deporte?: string; estado?: string; sistema?: string; q?: string };
+type Parametros = { provincia?: string; ciudad?: string; deporte?: string; estado?: string; sistema?: string; q?: string; orden?: string; vista?: string; pagina?: string };
 
-/** Para usar en ilike sin que % o _ funcionen como comodines. */
-const escaparLike = (t: string) => t.replace(/[\\%_]/g, (c) => `\\${c}`);
+const claseTab = (activa: boolean) => cx("whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-semibold", activa ? "bg-tinta text-papel" : "bg-superficie text-tenue hover:text-tinta");
 
-export default async function Complejos({ searchParams }: { searchParams: Promise<Filtros> }) {
+export default async function Complejos({ searchParams }: { searchParams: Promise<Parametros> }) {
   const f = await searchParams;
   const estado = f.estado && f.estado in ETIQUETA_ESTADO ? (f.estado as EstadoProspecto) : null;
-  const deporte = (DEPORTES as readonly string[]).includes(f.deporte ?? "") ? (f.deporte as Deporte) : null;
+  const deporte = (DEPORTES as readonly string[]).includes(f.deporte ?? "") ? (f.deporte as string) : null;
   const sistema = f.sistema === "desconocido" ? "desconocido" : (SISTEMAS as readonly string[]).includes(f.sistema ?? "") ? (f.sistema as SistemaActual) : null;
   const q = (f.q ?? "").trim().slice(0, 100);
   const provincia = (f.provincia ?? "").slice(0, 120) || null;
   const ciudad = (f.ciudad ?? "").slice(0, 120) || null;
+  const orden: Orden = f.orden && f.orden in ORDENES ? (f.orden as Orden) : "prioridad";
+  const tablero = f.vista === "tablero";
 
-  let consulta = db().from("prospectos").select("id, nombre, rubro, ciudad, provincia, prioridad, estado, resenas, deportes, sistema_actual, telefono_wa", { count: "exact" });
-  if (provincia) consulta = consulta.eq("provincia", provincia);
-  if (ciudad) consulta = consulta.eq("ciudad", ciudad);
-  if (deporte) consulta = consulta.contains("deportes", [deporte]);
-  if (estado) consulta = consulta.eq("estado", estado);
-  if (sistema === "desconocido") consulta = consulta.is("sistema_actual", null);
-  else if (sistema) consulta = consulta.eq("sistema_actual", sistema);
-  if (q) consulta = consulta.ilike("nombre", `%${escaparLike(q)}%`);
+  const todas = await leerTodo<FilaComplejo>((desde, hasta) => db().from("prospectos").select(COLUMNAS).order("id").range(desde, hasta));
+  const filtradas = filtrarComplejos(todas, { provincia, ciudad, deporte, sistema, q });
+  const conteo = contarPorEstado(filtradas);
+  const deEstado = estado ? filtradas.filter((p) => p.estado === estado) : filtradas;
+  const pagina = paginar(ordenarComplejos(deEstado, orden), Number(f.pagina ?? "1"), POR_PAGINA);
 
-  const [{ data, count, error }, lugares] = await Promise.all([
-    consulta.order("prioridad").order("resenas", { ascending: false }).limit(MOSTRAR),
-    leerTodo<{ provincia: string | null; ciudad: string | null }>((desde, hasta) => db().from("prospectos").select("provincia, ciudad").order("id").range(desde, hasta)),
-  ]);
-  const lista = (data ?? []) as Prospecto[];
-  const provincias = [...new Set(lugares.map((l) => l.provincia).filter((p): p is string => Boolean(p)))].sort((a, b) => a.localeCompare(b, "es"));
-  const ciudades = [...new Set(lugares.filter((l) => !provincia || l.provincia === provincia).map((l) => l.ciudad).filter((c): c is string => Boolean(c)))].sort((a, b) =>
-    a.localeCompare(b, "es"),
-  );
-  const hayFiltros = Boolean(provincia || ciudad || deporte || estado || sistema || q);
+  const provincias = [...new Set(todas.map((l) => l.provincia).filter((p): p is string => Boolean(p)))].sort((a, b) => a.localeCompare(b, "es"));
+  const ciudades = [...new Set(todas.filter((l) => !provincia || l.provincia === provincia).map((l) => l.ciudad).filter((c): c is string => Boolean(c)))].sort((a, b) => a.localeCompare(b, "es"));
+  const hayFiltros = Boolean(provincia || ciudad || deporte || sistema || q);
+
+  /** Enlace a esta misma pantalla cambiando solo lo indicado (y volviendo a la página 1). */
+  const enlace = (cambios: Partial<Record<keyof Parametros, string | null>>) => {
+    const actuales: Record<string, string | null> = { provincia, ciudad, deporte, sistema, q: q || null, estado, orden: orden === "prioridad" ? null : orden, vista: tablero ? "tablero" : null, ...cambios };
+    const p = new URLSearchParams();
+    for (const [k, v] of Object.entries(actuales)) if (v) p.set(k, v);
+    return `/complejos${p.size ? `?${p}` : ""}`;
+  };
 
   return (
     <>
       <Encabezado
         titulo="Complejos"
-        detalle={`${count ?? 0} ${hayFiltros ? "con estos filtros" : "en la base"}${(count ?? 0) > lista.length ? ` · se muestran los primeros ${lista.length}` : ""}`}
+        detalle={`${deEstado.length} ${hayFiltros || estado ? "con estos filtros" : "en la base"}`}
         acciones={
           <>
             <BotonLink href="/complejos/nuevo">Agregar a mano</BotonLink>
@@ -60,6 +63,8 @@ export default async function Complejos({ searchParams }: { searchParams: Promis
 
       <Tarjeta className="p-4">
         <form className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6" aria-label="Filtrar complejos">
+          {estado ? <input type="hidden" name="estado" value={estado} /> : null}
+          {tablero ? <input type="hidden" name="vista" value="tablero" /> : null}
           <label className="flex flex-col gap-1 text-sm font-semibold lg:col-span-2">
             Nombre
             <Entrada name="q" defaultValue={q} placeholder="Buscar por nombre" type="search" />
@@ -92,17 +97,6 @@ export default async function Complejos({ searchParams }: { searchParams: Promis
             </Selector>
           </label>
           <label className="flex flex-col gap-1 text-sm font-semibold">
-            Estado
-            <Selector name="estado" defaultValue={estado ?? ""}>
-              <option value="">Todos</option>
-              {(Object.keys(ETIQUETA_ESTADO) as EstadoProspecto[]).map((e) => (
-                <option key={e} value={e}>
-                  {ETIQUETA_ESTADO[e]}
-                </option>
-              ))}
-            </Selector>
-          </label>
-          <label className="flex flex-col gap-1 text-sm font-semibold">
             Sistema actual
             <Selector name="sistema" defaultValue={sistema ?? ""}>
               <option value="">Todos</option>
@@ -114,10 +108,22 @@ export default async function Complejos({ searchParams }: { searchParams: Promis
               ))}
             </Selector>
           </label>
-          <div className="flex items-end gap-3 sm:col-span-3 lg:col-span-5">
+          {!tablero ? (
+            <label className="flex flex-col gap-1 text-sm font-semibold">
+              Ordenar por
+              <Selector name="orden" defaultValue={orden}>
+                {Object.entries(ORDENES).map(([v, t]) => (
+                  <option key={v} value={v}>
+                    {t}
+                  </option>
+                ))}
+              </Selector>
+            </label>
+          ) : null}
+          <div className="flex items-end gap-3 sm:col-span-2">
             <button className="rounded-md border border-marca bg-marca px-3.5 py-2 text-sm font-semibold text-marca-tinta hover:brightness-110">Filtrar</button>
             {hayFiltros ? (
-              <Link href="/complejos" className="text-sm font-semibold text-tenue hover:text-tinta">
+              <Link href={enlace({ provincia: null, ciudad: null, deporte: null, sistema: null, q: null })} className="text-sm font-semibold text-tenue hover:text-tinta">
                 Limpiar filtros
               </Link>
             ) : null}
@@ -125,9 +131,36 @@ export default async function Complejos({ searchParams }: { searchParams: Promis
         </form>
       </Tarjeta>
 
-      {error ? (
-        <Vacio titulo="No pude leer la base">Probá de nuevo en un rato.</Vacio>
-      ) : !lista.length ? (
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {!tablero ? (
+          <nav className="-mx-1 flex min-w-0 gap-1 overflow-x-auto" aria-label="Filtrar por estado">
+            <Link href={enlace({ estado: null })} className={claseTab(!estado)} aria-current={!estado ? "page" : undefined}>
+              Todos <span className="num text-xs opacity-70">{filtradas.length}</span>
+            </Link>
+            {(Object.keys(ETIQUETA_ESTADO) as EstadoProspecto[])
+              .filter((e) => conteo[e] || estado === e)
+              .map((e) => (
+                <Link key={e} href={enlace({ estado: e })} className={claseTab(estado === e)} aria-current={estado === e ? "page" : undefined}>
+                  {ETIQUETA_ESTADO[e]} <span className="num text-xs opacity-70">{conteo[e] ?? 0}</span>
+                </Link>
+              ))}
+          </nav>
+        ) : (
+          <p className="text-sm text-tenue">Sin contactar, descartados y bajas se ven en la lista.</p>
+        )}
+        <nav className="inline-flex rounded-md border border-linea p-0.5 text-sm font-semibold" aria-label="Vista">
+          <Link href={enlace({ vista: null })} aria-current={!tablero ? "page" : undefined} className={cx("rounded px-3 py-1", !tablero ? "bg-marca-suave text-marca" : "text-tenue hover:text-tinta")}>
+            Lista
+          </Link>
+          <Link href={enlace({ vista: "tablero", estado: null })} aria-current={tablero ? "page" : undefined} className={cx("rounded px-3 py-1", tablero ? "bg-marca-suave text-marca" : "text-tenue hover:text-tinta")}>
+            Tablero
+          </Link>
+        </nav>
+      </div>
+
+      {tablero ? (
+        <Tablero filas={ordenarComplejos(filtradas, "reciente")} enlaceEstado={(e) => enlace({ vista: null, estado: e })} />
+      ) : !pagina.items.length ? (
         <Vacio titulo="No hay complejos con estos filtros" />
       ) : (
         <Tarjeta>
@@ -143,7 +176,7 @@ export default async function Complejos({ searchParams }: { searchParams: Promis
               </tr>
             </thead>
             <tbody>
-              {lista.map((p) => (
+              {pagina.items.map((p) => (
                 <tr key={p.id}>
                   <td>
                     <Link href={`/complejos/${p.id}`} className="font-semibold hover:underline">
@@ -161,13 +194,33 @@ export default async function Complejos({ searchParams }: { searchParams: Promis
                   <td className="text-tenue">{p.deportes?.length ? p.deportes.join(", ") : "—"}</td>
                   <td className="num">{p.resenas ?? 0}</td>
                   <td className="text-tenue">{p.sistema_actual ? ETIQUETA_SISTEMA[p.sistema_actual] : "—"}</td>
-                  <td>{ETIQUETA_ESTADO[p.estado]}</td>
+                  <td>
+                    <EtiquetaEstado estado={p.estado} />
+                  </td>
                 </tr>
               ))}
             </tbody>
           </Tabla>
         </Tarjeta>
       )}
+
+      {!tablero && pagina.paginas > 1 ? (
+        <nav className="flex items-center justify-center gap-4 text-sm font-semibold" aria-label="Páginas">
+          {pagina.pagina > 1 ? (
+            <Link href={`${enlace({})}${enlace({}).includes("?") ? "&" : "?"}pagina=${pagina.pagina - 1}`} className="text-marca hover:underline">
+              ← Anterior
+            </Link>
+          ) : null}
+          <span className="num text-tenue">
+            Página {pagina.pagina} de {pagina.paginas}
+          </span>
+          {pagina.pagina < pagina.paginas ? (
+            <Link href={`${enlace({})}${enlace({}).includes("?") ? "&" : "?"}pagina=${pagina.pagina + 1}`} className="text-marca hover:underline">
+              Siguiente →
+            </Link>
+          ) : null}
+        </nav>
+      ) : null}
     </>
   );
 }

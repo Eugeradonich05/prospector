@@ -5,10 +5,12 @@ import { hoyAR } from "@/lib/dominio/fechas";
 import { opcionesDeZona, seguimientosPendientes } from "@/lib/dominio/tandas";
 import { leerTodo } from "@/lib/datos/leer-todo";
 import { problemaDeBase } from "@/lib/datos/diagnostico";
-import type { EstadoProspecto, Prospecto } from "@/lib/dominio/tipos";
+import { calcularEmbudo, coberturaPorProvincia, proximosPasos, resumirBase, type FilaMetricas } from "@/lib/dominio/metricas";
+import type { Prospecto } from "@/lib/dominio/tipos";
 import { Aviso, Encabezado, Tarjeta, TituloSeccion, Vacio } from "@/components/ui";
 import { Formulario, Enviar } from "@/components/formulario";
 import { SeccionSeguimientos, SeccionTanda } from "./tanda";
+import { PanelCobertura, PanelEmbudo, PanelFoco } from "./paneles";
 import { cargarComplejos } from "../acciones";
 
 export const metadata = { title: "Hoy" };
@@ -17,15 +19,7 @@ export const maxDuration = 120;
 
 type ParaSeguimiento = Pick<Prospecto, "id" | "estado" | "contactado_el" | "seguimiento_el" | "ultimo_entrante_el" | "nombre" | "rubro" | "ciudad" | "telefono_wa">;
 
-const RESPONDIERON: EstadoProspecto[] = ["respondio", "interesado", "demo", "cliente"];
-const INTERESADOS: EstadoProspecto[] = ["interesado", "demo", "cliente"];
-
-/** Cuenta filas con un filtro, sin traerlas (no depende del tope de 1000 filas de Supabase). */
-async function contar(filtrar: (q: ReturnType<typeof base>) => ReturnType<typeof base>): Promise<number> {
-  const { count } = await filtrar(base());
-  return count ?? 0;
-}
-const base = () => db().from("prospectos").select("id", { count: "exact", head: true });
+type FilaBase = FilaMetricas & Pick<Prospecto, "ciudad">;
 
 export default async function Hoy() {
   const problema = await problemaDeBase();
@@ -40,37 +34,42 @@ export default async function Hoy() {
   const hoy = hoyAR();
   const inicioDia = new Date(`${hoy}T00:00:00-03:00`).toISOString();
   const linkPrueba = env().LINK_PRUEBA_GRATIS;
-  const [{ data: tanda }, { data: urgentes }, contactados, total, sinContactar, totalContactados, respondieron, interesados, respuestasHoy, lugares] =
-    await Promise.all([
-      // La tanda de hoy más lo que quedó sin mandar de días anteriores (si no, quedaría trabado en "en_tanda").
-      db().from("prospectos").select("*").or(`tanda_fecha.eq.${hoy},estado.eq.en_tanda`).order("prioridad"),
-      db().from("prospectos").select("id, nombre, ciudad, motivo_humano, estado").eq("necesita_humano", true).order("ultimo_entrante_el", { ascending: false }),
-      // Solo los candidatos a seguimiento (contactados, sin respuesta ni seguimiento), sin el tope de 1000 filas.
-      leerTodo<ParaSeguimiento>((desde, hasta) =>
-        db()
-          .from("prospectos")
-          .select("id, estado, contactado_el, seguimiento_el, ultimo_entrante_el, nombre, rubro, ciudad, telefono_wa")
-          .eq("estado", "contactado")
-          .is("seguimiento_el", null)
-          .is("ultimo_entrante_el", null)
-          .order("id")
-          .range(desde, hasta),
-      ),
-      contar((q) => q),
-      contar((q) => q.eq("estado", "sin_contactar").not("telefono_wa", "is", null)),
-      contar((q) => q.not("contactado_el", "is", null)),
-      contar((q) => q.or(`ultimo_entrante_el.not.is.null,estado.in.(${RESPONDIERON.join(",")})`)),
-      contar((q) => q.in("estado", INTERESADOS)),
-      contar((q) => q.gte("ultimo_entrante_el", inicioDia)),
-      // Para el selector de zona: dónde quedan complejos sin contactar con WhatsApp.
-      leerTodo<{ provincia: string | null; ciudad: string | null }>((desde, hasta) =>
-        db().from("prospectos").select("provincia, ciudad").eq("estado", "sin_contactar").not("telefono_wa", "is", null).order("id").range(desde, hasta),
-      ),
-    ]);
+  const [{ data: tanda }, { data: urgentes }, contactados, filas] = await Promise.all([
+    // La tanda de hoy más lo que quedó sin mandar de días anteriores (si no, quedaría trabado en "en_tanda").
+    db().from("prospectos").select("*").or(`tanda_fecha.eq.${hoy},estado.eq.en_tanda`).order("prioridad"),
+    db().from("prospectos").select("id, nombre, ciudad, motivo_humano, estado").eq("necesita_humano", true).order("ultimo_entrante_el", { ascending: false }),
+    // Solo los candidatos a seguimiento (contactados, sin respuesta ni seguimiento), sin el tope de 1000 filas.
+    leerTodo<ParaSeguimiento>((desde, hasta) =>
+      db()
+        .from("prospectos")
+        .select("id, estado, contactado_el, seguimiento_el, ultimo_entrante_el, nombre, rubro, ciudad, telefono_wa")
+        .eq("estado", "contactado")
+        .is("seguimiento_el", null)
+        .is("ultimo_entrante_el", null)
+        .order("id")
+        .range(desde, hasta),
+    ),
+    // Una sola lectura liviana alcanza para el embudo, la cobertura y el selector de zona.
+    leerTodo<FilaBase>((desde, hasta) => db().from("prospectos").select("estado, contactado_el, ultimo_entrante_el, provincia, ciudad, telefono_wa").order("id").range(desde, hasta)),
+  ]);
 
   const lista = (tanda ?? []) as Prospecto[];
   const seguimientoIds = new Set(seguimientosPendientes(contactados, new Date()));
   const seguimientos = contactados.filter((p) => seguimientoIds.has(p.id) && p.telefono_wa);
+  const resumen = resumirBase(filas, inicioDia);
+  const { total, sinContactar, respuestasHoy } = resumen;
+  const zonas = opcionesDeZona(filas.filter((f) => f.estado === "sin_contactar" && f.telefono_wa));
+  const limite = env().TANDA_LIMITE;
+  const porEnviar = lista.filter((p) => p.estado === "en_tanda").length;
+  const enviadosHoy = lista.filter((p) => p.estado !== "en_tanda" && p.estado !== "sin_contactar" && p.estado !== "no_contactar").length;
+  const pasos = proximosPasos({
+    urgentes: urgentes?.length ?? 0,
+    porEnviar,
+    seguimientos: seguimientos.length,
+    tandaArmada: lista.length > 0,
+    cupoRestante: limite - lista.filter((p) => p.tanda_fecha === hoy).length,
+    sinContactar,
+  });
 
   if (!total) {
     return (
@@ -97,7 +96,7 @@ export default async function Hoy() {
 
   return (
     <>
-      <Encabezado titulo="Hoy" detalle={`Límite diario: ${env().TANDA_LIMITE} primeros contactos. Mandalos espaciados durante el día.`} />
+      <Encabezado titulo="Hoy" detalle="Mandá los mensajes espaciados durante el día, en horario comercial." />
       {!env().WHATSAPP_TOKEN ? (
         <Aviso>
           Modo manual: el bot todavía no está conectado. Mandá cada mensaje con «Abrir WhatsApp», tocá «Marcar como enviado» y, cuando te respondan, contestá
@@ -108,25 +107,16 @@ export default async function Hoy() {
         </Aviso>
       ) : null}
 
-      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-        {(
-          [
-            ["Sin contactar", sinContactar],
-            ["Contactados", totalContactados],
-            ["Respondieron", respondieron],
-            ["Interesados", interesados],
-            ["Respuestas hoy", respuestasHoy],
-          ] as const
-        ).map(([t, v]) => (
-          <Tarjeta key={t} className="p-4">
-            <dt className="text-xs font-semibold uppercase tracking-wide text-tenue">{t}</dt>
-            <dd className="num text-2xl font-semibold">{v}</dd>
-          </Tarjeta>
-        ))}
-      </dl>
+      <PanelFoco pasos={pasos} enviadosHoy={enviadosHoy} limite={limite} respuestasHoy={respuestasHoy} sinContactar={sinContactar} />
+
+      {resumen.alertaBajas ? (
+        <Aviso tono="debe">
+          Ojo con el número: {resumen.bajas} de {resumen.contactados} complejos contactados pidieron que no les escriban. Conviene frenar unos días y cambiar el mensaje.
+        </Aviso>
+      ) : null}
 
       {urgentes?.length ? (
-        <Tarjeta className="flex flex-col gap-3 border-debe/40 p-5">
+        <Tarjeta id="te-necesitan" className="flex scroll-mt-4 flex-col gap-3 border-debe/40 p-5">
           <TituloSeccion titulo={`Te necesitan (${urgentes.length})`} detalle="El bot dejó estas conversaciones para vos." />
           <ul className="flex flex-col divide-y divide-linea">
             {urgentes.map((u) => (
@@ -147,7 +137,7 @@ export default async function Hoy() {
         </Tarjeta>
       ) : null}
 
-      <SeccionTanda lista={lista} titulo="Tanda de hoy" zonas={opcionesDeZona(lugares)} />
+      <SeccionTanda lista={lista} titulo="Tanda de hoy" zonas={zonas} />
       <p className="-mt-2 text-sm text-tenue">
         Los que figuran como celular salen primero. El resto puede ser fijo: si WhatsApp te dice que el número no existe, tocá «No tiene WhatsApp» y entra otro.
         Si alguno quiere probar solo, el link es{" "}
@@ -158,6 +148,11 @@ export default async function Hoy() {
       </p>
 
       <SeccionSeguimientos seguimientos={seguimientos as Prospecto[]} linkPrueba={linkPrueba} />
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <PanelEmbudo etapas={calcularEmbudo(filas)} />
+        <PanelCobertura provincias={coberturaPorProvincia(filas)} />
+      </div>
     </>
   );
 }

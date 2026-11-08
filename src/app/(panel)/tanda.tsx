@@ -7,6 +7,7 @@ import { AreaTexto, Aviso, Etiqueta, Selector, Tarjeta, TituloSeccion } from "@/
 import { Formulario, Enviar } from "@/components/formulario";
 import { AbrirWhatsApp } from "@/components/abrir-whatsapp";
 import { Copiar } from "@/components/copiar";
+import { ListaTanda } from "./lista-tanda";
 import { armarTanda, contactadoPorOtroMedio, guardarMensajeInicial, marcarEnviado, nuevaTanda, rehacerMensajes, sacarDeTanda, sinWhatsApp } from "../acciones";
 
 const EXPLICACION =
@@ -49,7 +50,7 @@ export function SeccionTanda({ lista, titulo, zonas }: { lista: Prospecto[]; tit
   const enviadosHoy = lista.filter((p) => p.estado !== "en_tanda" && p.estado !== "sin_contactar" && p.estado !== "no_contactar").length;
 
   return (
-    <Tarjeta className="flex flex-col gap-4 p-5">
+    <Tarjeta id="tanda" className="flex scroll-mt-4 flex-col gap-4 p-5">
       <TituloSeccion titulo={titulo} detalle={lista.length ? `${enviadosHoy} enviados · ${pendientes.length} por enviar` : "Todavía no armaste la tanda de hoy."} />
       {!lista.length ? (
         <Formulario accion={armarTanda}>
@@ -87,9 +88,9 @@ export function SeccionTanda({ lista, titulo, zonas }: { lista: Prospecto[]; tit
             vuelve a escribir los mensajes. Los dos pisan lo que hayas editado. Lo que ya mandaste hoy sigue contando para el límite diario. «Copiar lista» copia nombre, teléfono y mensaje de cada uno, por si
             los mandás desde otro celular.
           </p>
-          <ul className="flex flex-col gap-4">
+          <ListaTanda>
             {pendientes.map((p) => (
-              <li key={p.id} className="flex flex-col gap-3 rounded-lg border border-linea p-4">
+              <div key={p.id} className="flex flex-col gap-3 rounded-lg border border-linea p-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="font-semibold">{p.nombre}</p>
@@ -146,9 +147,9 @@ export function SeccionTanda({ lista, titulo, zonas }: { lista: Prospecto[]; tit
                   </Formulario>
                 </div>
                 <OtrosMedios p={p} abierto={chanceWhatsApp(p.telefono, p.telefono_wa) === "baja"} />
-              </li>
+              </div>
             ))}
-          </ul>
+          </ListaTanda>
         </>
       )}
       {lista.length ? <p className="text-xs text-tenue">Si guardás cambios en un mensaje, el botón «Abrir WhatsApp» usa el texto nuevo después de guardar.</p> : null}
@@ -211,7 +212,7 @@ function OtrosMedios({ p, abierto }: { p: Prospecto; abierto: boolean }) {
 /** Único recordatorio para los contactados que no respondieron. */
 export function SeccionSeguimientos({ seguimientos, linkPrueba }: { seguimientos: Prospecto[]; linkPrueba: string }) {
   return (
-    <Tarjeta className="flex flex-col gap-3 p-5">
+    <Tarjeta id="seguimientos" className="flex scroll-mt-4 flex-col gap-3 p-5">
       <TituloSeccion titulo="Seguimientos" detalle="Contactados hace 3 días o más que no respondieron. Se manda uno solo." />
       {!seguimientos.length ? (
         <p className="text-sm text-tenue">Nadie para seguir hoy.</p>

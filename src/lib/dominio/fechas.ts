@@ -88,3 +88,14 @@ export function parsearPeriodo(valor: string | null | undefined): FechaISO | nul
   const m = /^(\d{4})-(0[1-9]|1[0-2])(?:-01)?$/.exec(valor.trim());
   return m ? `${m[1]}-${m[2]}-01` : null;
 }
+
+/** Hace cuánto fue: "recién", "hace 5 min", "hace 3 h", "ayer", "hace 4 d". */
+export function haceCuanto(iso: string, ahora: Date = new Date()): string {
+  const minutos = Math.max(0, Math.floor((ahora.getTime() - new Date(iso).getTime()) / 60_000));
+  if (minutos < 1) return "recién";
+  if (minutos < 60) return `hace ${minutos} min`;
+  const horas = Math.floor(minutos / 60);
+  if (horas < 24) return `hace ${horas} h`;
+  const dias = diasEntre(hoyAR(new Date(iso)), hoyAR(ahora));
+  return dias <= 1 ? "ayer" : `hace ${dias} d`;
+}
