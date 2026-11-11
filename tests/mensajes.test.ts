@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pedidoPrimerMensaje, plantillaPrimerMensaje, textoAceptable } from "@/lib/bot/primer-mensaje";
+import { conSitio, pedidoPrimerMensaje, plantillaPrimerMensaje, sitioVisible, textoAceptable } from "@/lib/bot/primer-mensaje";
 import { opcionesDeZona, textoListaTanda } from "@/lib/dominio/tandas";
 
 const base = { nombre: "Pádel del Parque", rubro: "Pádel", ciudad: "San Nicolás de los Arroyos" };
@@ -49,6 +49,35 @@ describe("primer mensaje (pedido a Claude)", () => {
   it("usa la cantidad de canchas solo si la sabemos", () => {
     expect(pedidoPrimerMensaje({ ...base, canchas_cantidad: 4 }).user).toContain("Cantidad de canchas: 4.");
     expect(pedidoPrimerMensaje(base).user).not.toContain("Cantidad de canchas");
+  });
+
+  it("le pide a Claude la web una sola vez, después de nombrar a Modo Cancha", () => {
+    const { system } = pedidoPrimerMensaje(base);
+    expect(system).toContain("www.modocanchas.com");
+    expect(system).toMatch(/una sola vez/);
+    expect(pedidoPrimerMensaje(base, "https://otra.com.ar/").system).toContain("otra.com.ar");
+  });
+
+  it("muestra la web sin https ni barra final", () => {
+    expect(sitioVisible("https://www.modocanchas.com/")).toBe("www.modocanchas.com");
+    expect(sitioVisible()).toBe("www.modocanchas.com");
+  });
+
+  it("agrega la web si falta, después de la primera mención de Modo Cancha, y no la duplica", () => {
+    const sin = "Hola! Te escribimos de Modo Cancha. ¿Cómo toman hoy las reservas?";
+    expect(conSitio(sin)).toBe("Hola! Te escribimos de Modo Cancha (www.modocanchas.com). ¿Cómo toman hoy las reservas?");
+    const con = "Hola! Te escribimos de Modo Cancha (www.modocanchas.com). ¿Cómo toman hoy las reservas?";
+    expect(conSitio(con)).toBe(con);
+    expect(conSitio("Hola, mirá https://modocanchas.com ¿qué te parece?")).toBe("Hola, mirá https://modocanchas.com ¿qué te parece?");
+    expect(conSitio("Hola! ¿Cómo toman las reservas?")).toBe("Hola! ¿Cómo toman las reservas?\nwww.modocanchas.com");
+  });
+
+  it("las plantillas de respaldo también llevan la web una sola vez", () => {
+    for (const nombre of ["Pádel del Parque", "La Bombonera 5", "Tridente"]) {
+      const t = plantillaPrimerMensaje(nombre, "Pádel");
+      expect(t.match(/modocanchas\.com/g)).toHaveLength(1);
+      expect(t).toContain("Modo Cancha (www.modocanchas.com)");
+    }
   });
 
   it("tiene respaldo si Claude no responde y rechaza respuestas raras", () => {
