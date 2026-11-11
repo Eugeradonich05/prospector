@@ -1,5 +1,24 @@
-import { LINEAS, plantillaPara } from "@/lib/dominio/lineas";
+import { LINEAS, SITIO_MODO_CANCHA, plantillaPara } from "@/lib/dominio/lineas";
 import { ETIQUETA_SISTEMA, type SistemaActual } from "@/lib/dominio/complejos";
+
+/** "https://www.modocanchas.com/" → "www.modocanchas.com": más corto, y WhatsApp lo convierte en link igual. */
+export function sitioVisible(sitio: string = SITIO_MODO_CANCHA): string {
+  return sitio.replace(/^https?:\/\//, "").replace(/\/+$/, "");
+}
+
+/**
+ * Garantiza que el primer mensaje tenga la web una sola vez. Si Claude (o la plantilla) no la puso,
+ * la agrega entre paréntesis después de la primera mención de «Modo Cancha»; si no hay mención, al final.
+ */
+export function conSitio(texto: string, sitio: string = SITIO_MODO_CANCHA): string {
+  const visible = sitioVisible(sitio);
+  const dominio = visible.replace(/^www\./, "").toLowerCase();
+  if (texto.toLowerCase().includes(dominio)) return texto;
+  const i = texto.indexOf("Modo Cancha");
+  if (i === -1) return `${texto.trim()}\n${visible}`;
+  const fin = i + "Modo Cancha".length;
+  return `${texto.slice(0, fin)} (${visible})${texto.slice(fin)}`;
+}
 
 /** Lo que se sabe del complejo al redactar el primer mensaje. Lo que falta no se inventa. */
 export type DatosPrimerMensaje = {
@@ -47,8 +66,11 @@ export function enfoqueSegunDeportes(deportes: string[] | null | undefined, rubr
  * Arma el pedido a Claude para el primer mensaje de un complejo. Es puro (sin red) para poder testearlo.
  * Corto, honesto y distinto en cada caso: los textos idénticos a muchos números son lo que WhatsApp detecta como spam.
  */
-export function pedidoPrimerMensaje(p: DatosPrimerMensaje): { system: string; user: string } {
-  const system = [PRESENTACION, enfoqueSegunSistema(p.sistema_actual), enfoqueSegunDeportes(p.deportes, p.rubro), REGLAS].join(" ");
+export function pedidoPrimerMensaje(p: DatosPrimerMensaje, sitio: string = SITIO_MODO_CANCHA): { system: string; user: string } {
+  const web =
+    `Incluí la web una sola vez, escrita exactamente así: ${sitioVisible(sitio)}, entre paréntesis justo después de la primera vez que nombrás a Modo Cancha ` +
+    `(por ejemplo «te escribimos de Modo Cancha (${sitioVisible(sitio)})»). No la pongas al final ni la repitas.`;
+  const system = [PRESENTACION, web, enfoqueSegunSistema(p.sistema_actual), enfoqueSegunDeportes(p.deportes, p.rubro), REGLAS].join(" ");
   const datos = [
     `Complejo: ${p.nombre}.`,
     `Rubro: ${p.rubro ?? "complejo de canchas"}.`,
@@ -61,9 +83,9 @@ export function pedidoPrimerMensaje(p: DatosPrimerMensaje): { system: string; us
   return { system, user: datos.join(" ") };
 }
 
-/** Primer mensaje de respaldo, si Claude no responde. */
-export function plantillaPrimerMensaje(nombre: string, rubro: string | null): string {
-  return plantillaPara(nombre, rubro ?? "complejo deportivo");
+/** Primer mensaje de respaldo, si Claude no responde. También lleva la web. */
+export function plantillaPrimerMensaje(nombre: string, rubro: string | null, sitio: string = SITIO_MODO_CANCHA): string {
+  return conSitio(plantillaPara(nombre, rubro ?? "complejo deportivo"), sitio);
 }
 
 /** Acepta lo que devolvió Claude solo si tiene un largo razonable. */
